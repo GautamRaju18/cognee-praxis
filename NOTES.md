@@ -94,6 +94,30 @@ concerns/justified_by/based_on edges, and GRAPH_COMPLETION returned the decision
 rationale. Cognee still adds its generic Entity/EntityType/TextSummary nodes alongside —
 harmless, and useful for recall.
 
+## Phase 4 — Outcomes, the decision→outcome edge, /revisit (2026-07-04)
+
+- **The killer edge is deterministic, not LLM-dependent**: POST /outcomes builds
+  ontology instances directly (Decision stub with authoritative SQLite properties +
+  Outcome) and pushes them via cognee's `add_data_points` — identity ids make the stub
+  land on the existing Decision node, guaranteeing `resulted_in`. The outcome document
+  is ALSO added + cognified so its text is embedded and extraction re-links by title.
+- `/revisit`: re-cognifies the dataset, repairs any missing decision→outcome edges from
+  SQLite (reports newly linked), then LLM-judges (via cognee's LLMGateway) whether
+  negative/mixed outcomes invalidate still-open assumptions → sets
+  `invalidated_by_outcome_id` in SQLite + writes `invalidated_by` graph edges.
+- **Gemini free-tier gotchas (cost half a day of quota):**
+  - `gemini-flash-latest` resolves to gemini-3.5-flash with a 20 req/DAY free quota.
+    Daily quotas are per-model, so we pin `gemini/gemini-2.5-flash` (250 req/day).
+  - Client-side rate limiting (`LLM_RATE_LIMIT_ENABLED` etc.) is ON in `.env` for the
+    server.
+- **Cognee holds asyncio locks bound to the first event loop that uses it.** Any second
+  loop touching the LLM path dies with "Lock is bound to a different event loop". All
+  tests therefore run on ONE session-scoped loop (pytest-asyncio
+  `asyncio_default_test_loop_scope = session`) and exercise the app through
+  `httpx.ASGITransport` — never the sync `TestClient` (it spins a loop per block), and
+  the limiter stays off in tests. The uvicorn server has a single loop, so it's safe.
+- Full suite: 4 passed in ~71s (real LLM calls).
+
 ### Assumptions / cautions
 - `cognee.prune.prune_data()` wipes *all* datasets in the configured storage root.
   Because storage is project-local, that's safe for `make reset-memory`, but tests will

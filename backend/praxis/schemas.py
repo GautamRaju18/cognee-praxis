@@ -76,6 +76,24 @@ class DecisionOut(BaseModel):
     outcomes: list[OutcomeOut] = []
 
 
+class QueryOut(BaseModel):
+    answer: str
+    cited_decisions: list[DecisionOut] = []
+    context: str = ""
+
+
+class ProposalCheckOut(BaseModel):
+    repeats_prior: bool
+    contradicts: list[str] = []
+    relevant_history: list[DecisionOut] = []
+    warning: str = ""
+
+
+class RevisitReport(BaseModel):
+    newly_linked_outcomes: list[dict] = []
+    invalidated_assumptions: list[dict] = []
+
+
 class HealthOut(BaseModel):
     status: Literal["ok", "degraded"]
     db: str

@@ -2,6 +2,10 @@
 testpaths = ["backend/tests"]
 pythonpath = ["backend"]
 asyncio_mode = "auto"
+# cognee holds asyncio locks bound to the loop that first used it — every test
+# must run on ONE shared loop (see backend/tests/conftest.py).
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
 
 [tool.ruff]
 line-length = 100

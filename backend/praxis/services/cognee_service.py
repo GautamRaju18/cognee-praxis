@@ -136,6 +136,26 @@ async def add_graph_edges(edges: list[tuple[str, str, str]]) -> None:
     await engine.add_edges(payload)
 
 
+async def push_data_points(points: list) -> None:
+    """Directly upsert ontology DataPoint instances (nodes + typed edges).
+
+    Bypasses LLM extraction — used for authoritative, deterministic graph
+    writes (e.g. the decision->outcome RESULTED_IN edge).
+    """
+    _cognee()
+    from cognee.tasks.storage import add_data_points
+
+    await add_data_points(points)
+
+
+async def llm_structured(text: str, system_prompt: str, response_model: type) -> Any:
+    """One-shot structured LLM call through cognee's configured provider."""
+    _cognee()
+    from cognee.infrastructure.llm.LLMGateway import LLMGateway
+
+    return await LLMGateway.acreate_structured_output(text, system_prompt, response_model)
+
+
 async def forget_dataset(dataset: str) -> None:
     """Delete one dataset's data (used by tests for isolation)."""
     cognee = _cognee()
