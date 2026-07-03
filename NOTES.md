@@ -60,6 +60,40 @@ PASSED against dataset `praxis_smoke` with Gemini:
 - `/health` verified two ways: pytest (`backend/tests/test_health.py`) and a live
   uvicorn boot → `{"status":"ok","db":"ok","cognee":"ok","cognee_version":"1.2.2"}`.
 
+## Phase 2 — Ontology + cognee_service (2026-07-04)
+
+How cognee 1.2.2 really consumes `graph_model` (read the source, not the docs):
+- If the model is NOT a `KnowledgeGraph` subclass, the LLM fills an instance of it per
+  chunk (instructor structured output) and `add_data_points` converts nested DataPoint
+  fields into typed graph edges — **edge name = field name**.
+- So `praxis/ontology.py` defines DataPoint subclasses; spec edges map to lowercase
+  fields: MADE_BY→`made_by`, PARTICIPANT→`participant`, CONCERNS→`concerns`,
+  JUSTIFIED_BY→`justified_by`, BASED_ON→`based_on`, RESULTED_IN→`resulted_in`,
+  INVALIDATED_BY→`invalidated_by` (Assumption→Outcome).
+- **`identity_fields` metadata → deterministic node ids** (`Class.id_for(value)`),
+  namespaced by class name. Decision identity = title, Person/Topic = name,
+  Outcome = description, Assumption = statement. This is the mechanism that merges a
+  decision mentioned in a *later* outcome document onto the SAME node — the
+  decision→outcome edge forms across separate cognify runs.
+- **SUPERSEDES / CONTRADICTS are not extraction fields**: a self-referential
+  `Decision` field would leak raw DataPoint infrastructure (id/created_at/
+  belongs_to_set...) into the LLM schema, because cognee's cycle-breaking returns the
+  unsimplified class. They're written as explicit edges via
+  `cognee_service.add_graph_edges()` (graph engine `add_edges`).
+- Field descriptions are stripped by cognee's schema simplification
+  (`datapoint_model_to_basemodel` keeps only annotation+default), so all extraction
+  semantics live in `prompts.EXTRACTION_PROMPT`, passed as `cognify(custom_prompt=...)`.
+- Default graph store is **ladybug** (embedded, Kuzu lineage); exposes
+  `get_graph_data()` and Cypher-ish `query()` — will power `GET /graph` in Phase 8.
+- `praxis.ontology` is the only module besides `cognee_service` that imports cognee
+  (its classes must subclass cognee's DataPoint) — the two files are the cognee layer.
+
+Smoke test (`scripts/praxis_smoke.py`) PASSED: one decision-log text produced
+Decision/Person(3)/Topic(2)/Rationale/Assumption(2) nodes with made_by/participant/
+concerns/justified_by/based_on edges, and GRAPH_COMPLETION returned the decision +
+rationale. Cognee still adds its generic Entity/EntityType/TextSummary nodes alongside —
+harmless, and useful for recall.
+
 ### Assumptions / cautions
 - `cognee.prune.prune_data()` wipes *all* datasets in the configured storage root.
   Because storage is project-local, that's safe for `make reset-memory`, but tests will
