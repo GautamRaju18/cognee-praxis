@@ -41,9 +41,10 @@ class Decision(Base):
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
-    # Cognee linkage: which dataset/document this decision was pushed as.
+    # Cognee linkage: dataset it was pushed to + deterministic graph node id
+    # (= ontology.decision_node_id(title)), for graph<->SQLite mapping.
     cognee_dataset: Mapped[str | None] = mapped_column(String(120), nullable=True)
-    cognee_document_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    cognee_node_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     assumptions: Mapped[list["Assumption"]] = relationship(
         back_populates="decision",
@@ -85,6 +86,6 @@ class Outcome(Base):
     evidence_source: Mapped[str | None] = mapped_column(String(300), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
-    cognee_document_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    cognee_node_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     decision: Mapped[Decision] = relationship(back_populates="outcomes")

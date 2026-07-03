@@ -9,6 +9,7 @@ from sqlalchemy import text
 from praxis import __version__
 from praxis.config import settings  # noqa: F401  (must load env before cognee)
 from praxis.db import engine, init_db
+from praxis.routers import decisions
 from praxis.schemas import HealthOut
 
 
@@ -27,6 +28,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(decisions.router)
 
 
 @app.get("/health", response_model=HealthOut)

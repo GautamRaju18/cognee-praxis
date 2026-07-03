@@ -136,6 +136,15 @@ async def add_graph_edges(edges: list[tuple[str, str, str]]) -> None:
     await engine.add_edges(payload)
 
 
+async def forget_dataset(dataset: str) -> None:
+    """Delete one dataset's data (used by tests for isolation)."""
+    cognee = _cognee()
+    try:
+        await cognee.forget(dataset=dataset)
+    except Exception:
+        pass  # dataset may not exist yet — nothing to forget
+
+
 async def prune_all() -> None:
     """Wipe all cognee data + system state (project-local storage only)."""
     cognee = _cognee()
