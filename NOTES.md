@@ -41,6 +41,25 @@ PASSED against dataset `praxis_smoke` with Gemini:
 - `add()` 9.6s → `cognify()` (default KnowledgeGraph model) 16.8s → `search(GRAPH_COMPLETION)` 7.6s.
 - Answer correctly recovered decision, owner and rationale from one ingested paragraph.
 
+## Phase 1 — Skeleton (2026-07-04)
+
+- **No GNU make on this machine** (checked PowerShell and Git Bash). The Makefile exists
+  as specified, and `tasks.ps1` mirrors every target for Windows (`.\tasks.ps1 api`).
+- App DB is **async SQLAlchemy** (`sqlite+aiosqlite`) so FastAPI endpoints never block;
+  tables are created on startup via lifespan (no alembic — SQLite file is disposable
+  via `reset-memory`).
+- `participants` stored as a JSON column on `decisions` (no join table — they're just
+  display names; Person is a first-class node in the *cognee* graph, not in SQLite).
+- Decision/Outcome rows carry `cognee_dataset` / `cognee_document_id` columns for
+  SQLite↔cognee linkage (populated from Phase 3 on).
+- Enum-ish fields (status, valence, confidence, reversibility) are validated at the
+  Pydantic layer with `Literal` types; SQLite stores plain strings.
+- `praxis.config` must be imported before any module that imports cognee (it loads
+  `.env` and sets `ENABLE_BACKEND_ACCESS_CONTROL` first); ruff's E402 is disabled to
+  allow this ordering where needed.
+- `/health` verified two ways: pytest (`backend/tests/test_health.py`) and a live
+  uvicorn boot → `{"status":"ok","db":"ok","cognee":"ok","cognee_version":"1.2.2"}`.
+
 ### Assumptions / cautions
 - `cognee.prune.prune_data()` wipes *all* datasets in the configured storage root.
   Because storage is project-local, that's safe for `make reset-memory`, but tests will

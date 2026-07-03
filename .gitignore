@@ -4,3 +4,8 @@ __pycache__/
 *.pyc
 .cognee_system/
 .data_storage/
+praxis.db
+.pytest_cache/
+.ruff_cache/
+node_modules/
+frontend/dist/
