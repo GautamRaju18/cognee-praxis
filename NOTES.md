@@ -118,6 +118,25 @@ harmless, and useful for recall.
   the limiter stays off in tests. The uvicorn server has a single loop, so it's safe.
 - Full suite: 4 passed in ~71s (real LLM calls).
 
+## Phase 5 — /query + /check-proposal (2026-07-04)
+
+- `/query`: GRAPH_COMPLETION (with a Praxis system prompt) for the answer + a second
+  `only_context=True` retrieval; decisions are cited by matching their titles against
+  the retrieved context/answer and returned as full SQLite records (with outcomes), so
+  the decision→outcome connection is visible in the response itself.
+- `/check-proposal`: graph context for the proposal + same-topic SQLite decisions are
+  fed to an LLM judge (structured verdict) → repeats_prior / contradicts (mapped back
+  to decision ids by title) / warning.
+- **Dataset scoping is soft**: with access control disabled, the graph and vector
+  collections are global — context can bleed across datasets. Fine for the product
+  (one company brain); to keep tests clean the graph was fully pruned once.
+- **Free-tier quota discovery**: this Gemini key allows **20 generate requests per DAY
+  per model** (GenerateRequestsPerDayPerProjectPerModel-FreeTier). Strategy: pin a
+  model, hop to a fresh per-model bucket when exhausted (3.5-flash and 2.5-flash burned
+  today; now on 2.5-flash-lite), run each phase's LLM test exactly once. Ollama is
+  installed locally (llama3.2 3B) but CPU extraction latency and 3B JSON-schema
+  adherence make it a poor default; it stays an env-swap option.
+
 ### Assumptions / cautions
 - `cognee.prune.prune_data()` wipes *all* datasets in the configured storage root.
   Because storage is project-local, that's safe for `make reset-memory`, but tests will
