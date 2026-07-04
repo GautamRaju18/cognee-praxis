@@ -23,7 +23,13 @@ export default function App() {
   const [page, setPage] = useState<PageKey>("ask");
   const [health, setHealth] = useState<Health | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [openDecisionId, setOpenDecisionId] = useState<string | null>(null);
   const bump = () => setRefreshKey((k) => k + 1);
+
+  const openDecision = (id: string) => {
+    setOpenDecisionId(id);
+    setPage("decisions");
+  };
 
   useEffect(() => {
     getHealth()
@@ -74,11 +80,17 @@ export default function App() {
 
       <main className="flex-1 overflow-y-auto p-8">
         {page === "ask" && <Ask />}
-        {page === "decisions" && <Decisions refreshKey={refreshKey} />}
+        {page === "decisions" && (
+          <Decisions
+            refreshKey={refreshKey}
+            initialOpen={openDecisionId}
+            onDrawerClosed={() => setOpenDecisionId(null)}
+          />
+        )}
         {page === "log" && <LogDecision onLogged={bump} />}
         {page === "check" && <CheckProposal />}
         {page === "ingest" && <Ingest onIngested={bump} />}
-        {page === "brain" && <Brain />}
+        {page === "brain" && <Brain onOpenDecision={openDecision} />}
       </main>
     </div>
   );

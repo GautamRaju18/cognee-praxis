@@ -10,3 +10,4 @@ praxis.db
 node_modules/
 frontend/dist/
 backend/tests/.test.db
+frontend/tsconfig.tsbuildinfo

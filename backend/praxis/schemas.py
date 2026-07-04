@@ -89,6 +89,24 @@ class ProposalCheckOut(BaseModel):
     warning: str = ""
 
 
+class GraphNodeOut(BaseModel):
+    id: str
+    label: str
+    type: str
+    decision_id: str | None = None  # register id when the node is a known Decision
+
+
+class GraphEdgeOut(BaseModel):
+    source: str
+    target: str
+    relationship: str
+
+
+class GraphOut(BaseModel):
+    nodes: list[GraphNodeOut] = []
+    edges: list[GraphEdgeOut] = []
+
+
 class IngestReport(BaseModel):
     chars_ingested: int
     decisions: list[DecisionOut] = []  # newly created register entries

@@ -194,11 +194,19 @@ function Drawer({ id, onClose }: { id: string; onClose: () => void }) {
   );
 }
 
-export default function Decisions({ refreshKey }: { refreshKey: number }) {
+export default function Decisions({
+  refreshKey,
+  initialOpen = null,
+  onDrawerClosed,
+}: {
+  refreshKey: number;
+  initialOpen?: string | null;
+  onDrawerClosed?: () => void;
+}) {
   const [decisions, setDecisions] = useState<Decision[]>([]);
   const [topic, setTopic] = useState("");
   const [status, setStatus] = useState("");
-  const [open, setOpen] = useState<string | null>(null);
+  const [open, setOpen] = useState<string | null>(initialOpen);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -281,7 +289,15 @@ export default function Decisions({ refreshKey }: { refreshKey: number }) {
           </tbody>
         </table>
       </div>
-      {open && <Drawer id={open} onClose={() => setOpen(null)} />}
+      {open && (
+        <Drawer
+          id={open}
+          onClose={() => {
+            setOpen(null);
+            onDrawerClosed?.();
+          }}
+        />
+      )}
     </div>
   );
 }
