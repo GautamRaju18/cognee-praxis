@@ -72,6 +72,7 @@ export interface GraphNode {
   id: string;
   label: string;
   type: string;
+  decision_id: string | null;
 }
 
 export interface GraphEdge {

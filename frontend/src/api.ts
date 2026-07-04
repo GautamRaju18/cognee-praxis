@@ -66,3 +66,33 @@ export const ingestFile = (file: File) => {
 };
 
 export const getGraph = () => request<GraphData>("/graph");
+
+export interface BrainStats {
+  decisions: number;
+  outcomes: number;
+  assumptions: number;
+  disproven: number;
+  topics: string[];
+  nodes: number;
+  edges: number;
+}
+
+export async function getBrainStats(decisions: Decision[]): Promise<BrainStats> {
+  let nodes = 0;
+  let edges = 0;
+  try {
+    const g = await getGraph();
+    nodes = g.nodes.length;
+    edges = g.edges.length;
+  } catch {
+    /* graph optional for stats */
+  }
+  const outcomes = decisions.reduce((n, d) => n + d.outcomes.length, 0);
+  const assumptions = decisions.reduce((n, d) => n + d.assumptions.length, 0);
+  const disproven = decisions.reduce(
+    (n, d) => n + d.assumptions.filter((a) => a.invalidated_by_outcome_id).length,
+    0,
+  );
+  const topics = [...new Set(decisions.map((d) => d.topic).filter(Boolean))];
+  return { decisions: decisions.length, outcomes, assumptions, disproven, topics, nodes, edges };
+}

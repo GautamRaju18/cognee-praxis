@@ -196,3 +196,76 @@ harmless, and useful for recall.
   still prefer per-dataset isolation (`forget(dataset=...)` / dedicated dataset names).
 - One paragraph ≈ 30s end-to-end with Gemini Flash — ingest endpoints must be async and
   the frontend must show progress states; cognify supports `run_in_background=True` if needed.
+
+## Post-build — LLM quota outage & local Ollama fallback (2026-07-04)
+
+**Symptom:** `/query`, `/check-proposal`, `/ingest` hung forever (frontend spinner
+never resolved). The bare `127.0.0.1:8000/` "Not Found" is unrelated — the API has
+no root route by design.
+
+**Root cause:** Gemini free-tier LLM quota exhausted
+(`GenerateRequestsPerDayPerProjectPerModel-FreeTier`, limit **20/day**, all usable
+model buckets burned). Cognee's tenacity backoff retries a 429 with a ~128s sleep,
+so the request never returns. The Gemini *embedding* endpoint was still fine (200).
+
+**Fix — swap only the LLM to local Ollama, keep Gemini embeddings (no re-seed):**
+- `.env` LLM block now: `LLM_PROVIDER=ollama`, `LLM_MODEL=llama3.2`,
+  `LLM_ENDPOINT=http://localhost:11434/v1`, `LLM_API_KEY=ollama`. The Gemini LLM
+  block is kept commented for a one-move switch-back after the daily reset
+  (~12:30 PM IST / midnight Pacific).
+- Embeddings stay `gemini-embedding-001` so the existing seeded vectors (3072-dim)
+  remain valid — **no reset/re-seed needed**.
+
+**Gotchas hit (all fixed):**
+1. Cognee's `LLMConfig` requires **`EMBEDDING_DIMENSIONS`** to be explicit once the
+   LLM provider is non-default → added `EMBEDDING_DIMENSIONS="3072"`.
+2. Cognee's native Ollama adapter passes `LLM_MODEL` **verbatim** to Ollama, so a
+   litellm-style `ollama/llama3.2` 404s ("model not found"). Use the **bare** name
+   `llama3.2`. (The repo's old `.env.example` Ollama line used the wrong prefix.)
+3. **Stale ladybug lock** after restarts: force-killing uvicorn orphans the
+   `multiprocess`-spawned cognee DB-worker children (their parent PID dies but they
+   keep the graph-DB lock → `Could not set lock ... Error: 33`). Kill ALL cognee
+   python incl. workers before relaunch:
+   `Get-CimInstance Win32_Process -Filter "Name='python.exe'" | ? { $_.CommandLine -match 'multiprocess|uvicorn|praxis|cognee|ladybug' } | % { Stop-Process -Id $_.ProcessId -Force }`
+   (the earlier `' -c '` regex missed the quoted `"-c"` arg — match `multiprocess`).
+
+**Verified on Ollama:** `/query` returns coherent cited answers (~43s cold, model on
+CPU; single uvicorn worker briefly blocks during generation so a concurrent /health
+can read 000 mid-call — not a crash). `/check-proposal` responds (200) and retrieval
+correctly surfaces the prior referral decision in `relevant_history`, **but llama3.2
+(3B) mis-judged `repeats_prior=False`** — the structured verdict quality is the known
+3B weakness. Switch back to Gemini after quota reset for demo-grade judgments.
+
+## Post-build — /ingest hardened (retry-storm timeout) (2026-07-04)
+
+**Symptom:** `/ingest` appeared to "crash the server." **Corrected diagnosis:** it
+does NOT crash. Two things confused the early triage:
+1. The endpoint takes multipart form (`file`/`text=` Form fields). Early tests
+   POSTed a JSON body, which FastAPI rejects with 422 *before* the handler runs —
+   so cognify never executed in those; the process deaths seen then were unrelated
+   (stale-lock cleanup / manual kills), not the ingest handler.
+2. With a *correct* multipart request, in-process add+cognify runs fine but, on a
+   weak LLM (llama3.2 3B), the cognify pipeline **retry-storms**: the same pipeline
+   run id re-executes every ~28s indefinitely because the model keeps emitting
+   structured output that fails validation. That looked like a hang.
+
+**What was tried and rejected:** an out-of-process cognify worker
+(`asyncio.create_subprocess_exec`). It isolates faults but **deadlocks on the
+ladybug single-writer lock** whenever the server already holds the graph open (i.e.
+after any `/query` or `/graph`) → clean 500 but unusable live. Removed.
+
+**Fix (in-process + bounded, ingest_service.py):** keep add+cognify in-process (one
+process owns the single-writer graph DB, so no lock contention) and wrap it in
+`asyncio.wait_for(..., timeout=150s)`. A retry storm now returns a clean **504** with
+an actionable message instead of hanging; `wait_for` cancellation stops the loop
+(verified: no pipeline runs after the 504, `/health` 200 throughout). A good pass is
+~15–35s, well under the ceiling; the 150s headroom also covers legit multi-chunk
+Gemini ingests.
+
+**Remaining limit (model, not stability):** even when it completes, llama3.2 can't
+fill the nested PraxisGraph schema — an extracted decision collapses into a single
+`PraxisGraph` node instead of a typed `Decision`, so the ingest diff (type=="Decision")
+finds nothing → ~0 yield on the local model. **Ingest needs Gemini** (phase-6 test
+passed there). On Ollama, `/ingest` is now safe (bounded 504) but low-yield; the
+other endpoints (`/query`, `/check-proposal`, register, graph) are the usable local
+demo surface.

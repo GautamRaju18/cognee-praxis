@@ -1,98 +1,189 @@
 import type { ReactNode } from "react";
-import type { Decision, Valence } from "./types";
+import type { Decision, Outcome, Valence } from "./types";
+
+/* ── tiny utils ─────────────────────────────────────────── */
+export function daysBetween(from?: string, to?: string): number | null {
+  if (!from || !to) return null;
+  const a = new Date(from).getTime();
+  const b = new Date(to).getTime();
+  if (Number.isNaN(a) || Number.isNaN(b)) return null;
+  return Math.round((b - a) / 86_400_000);
+}
+
+export function fmtDate(d?: string): string {
+  if (!d) return "—";
+  const t = new Date(d);
+  if (Number.isNaN(t.getTime())) return d;
+  return t.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+}
+
+/* ── badges / chips ─────────────────────────────────────── */
+const STATUS_STYLE: Record<string, string> = {
+  decided: "text-[var(--color-signal)] border-[var(--color-signal-dim)] bg-[var(--color-signal-deep)]",
+  proposed: "text-[var(--color-person)] border-[#2f4173] bg-[#141b30]",
+  reversed: "text-[var(--color-mixed)] border-[#6b5320] bg-[#241d0e]",
+  superseded: "text-[var(--color-fg-faint)] border-[var(--color-hair)] bg-[var(--color-panel)]",
+};
 
 export function StatusBadge({ status }: { status: string }) {
-  const colors: Record<string, string> = {
-    decided: "bg-emerald-950 text-emerald-300 ring-emerald-800",
-    proposed: "bg-sky-950 text-sky-300 ring-sky-800",
-    reversed: "bg-amber-950 text-amber-300 ring-amber-800",
-    superseded: "bg-zinc-800 text-zinc-400 ring-zinc-700",
-  };
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${colors[status] ?? colors.superseded}`}
+      className={`px-mono inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] uppercase tracking-wider ${STATUS_STYLE[status] ?? STATUS_STYLE.superseded}`}
     >
       {status}
     </span>
   );
 }
 
+const VALENCE_STYLE: Record<Valence, string> = {
+  positive: "text-[var(--color-pos)] border-[#1f6b43] bg-[#0c2418]",
+  negative: "text-[var(--color-neg)] border-[#7a2c37] bg-[#2a1015]",
+  mixed: "text-[var(--color-mixed)] border-[#6b5320] bg-[#241d0e]",
+};
+
 export function ValenceChip({ valence }: { valence: Valence }) {
-  const map: Record<Valence, string> = {
-    positive: "bg-emerald-950 text-emerald-300 ring-emerald-800",
-    negative: "bg-rose-950 text-rose-300 ring-rose-800",
-    mixed: "bg-amber-950 text-amber-300 ring-amber-800",
-  };
+  const dot = { positive: "▲", negative: "▼", mixed: "◆" }[valence];
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${map[valence]}`}
+      className={`px-mono inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] uppercase tracking-wider ${VALENCE_STYLE[valence]}`}
     >
+      <span aria-hidden>{dot}</span>
       {valence}
     </span>
   );
 }
 
-export function Card({ children, onClick }: { children: ReactNode; onClick?: () => void }) {
+export function Eyebrow({ children }: { children: ReactNode }) {
+  return <div className="px-eyebrow">{children}</div>;
+}
+
+export function TimeGap({ days }: { days: number | null }) {
+  if (days === null) return null;
+  const sign = days >= 0 ? "+" : "−";
+  return (
+    <span className="px-gap" title="Time between the decision and this outcome">
+      {sign}
+      {Math.abs(days)}d
+    </span>
+  );
+}
+
+/* ── surfaces ───────────────────────────────────────────── */
+export function Panel({
+  children,
+  className = "",
+  onClick,
+}: {
+  children: ReactNode;
+  className?: string;
+  onClick?: () => void;
+}) {
   return (
     <div
       onClick={onClick}
-      className={`rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 ${onClick ? "cursor-pointer transition hover:border-zinc-600" : ""}`}
+      className={`px-panel ${onClick ? "px-panel-hover cursor-pointer" : ""} ${className}`}
     >
       {children}
     </div>
   );
 }
 
-export function DecisionCard({ decision, onOpen }: { decision: Decision; onOpen?: () => void }) {
+/* ── the decision→outcome card (signature: the thread) ──── */
+function OutcomeThreadItem({ decision, outcome }: { decision: Decision; outcome: Outcome }) {
   return (
-    <Card onClick={onOpen}>
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="font-semibold text-zinc-100">{decision.title}</div>
-          <div className="mt-1 text-sm text-zinc-400">{decision.statement}</div>
-        </div>
-        <StatusBadge status={decision.status} />
+    <div className="px-thread-node pb-3 last:pb-0">
+      <div className="flex items-center gap-2">
+        <ValenceChip valence={outcome.valence} />
+        <TimeGap days={daysBetween(decision.decided_on, outcome.observed_on)} />
+        <span className="px-mono text-[10px] text-[var(--color-fg-faint)]">
+          {fmtDate(outcome.observed_on)}
+        </span>
       </div>
-      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
-        <span className="rounded bg-zinc-800 px-1.5 py-0.5">{decision.topic}</span>
-        <span>{decision.owner}</span>
-        <span>{decision.decided_on}</span>
-      </div>
-      {decision.outcomes.length > 0 && (
-        <div className="mt-3 space-y-1.5 border-t border-zinc-800 pt-3">
-          {decision.outcomes.map((o) => (
-            <div key={o.id} className="flex items-start gap-2 text-sm">
-              <ValenceChip valence={o.valence} />
-              <span className="text-zinc-300">{o.description}</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </Card>
+      <div className="mt-1 text-sm text-[var(--color-fg-muted)]">{outcome.description}</div>
+    </div>
   );
 }
 
+export function DecisionCard({
+  decision,
+  onOpen,
+  compact = false,
+}: {
+  decision: Decision;
+  onOpen?: () => void;
+  compact?: boolean;
+}) {
+  const disproven = decision.assumptions.filter((a) => a.invalidated_by_outcome_id);
+  return (
+    <Panel onClick={onOpen} className="p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="px-display text-[15px] leading-tight text-[var(--color-fg)]">
+            {decision.title}
+          </div>
+          {!compact && (
+            <div className="mt-1 line-clamp-2 text-sm text-[var(--color-fg-muted)]">
+              {decision.statement}
+            </div>
+          )}
+        </div>
+        <StatusBadge status={decision.status} />
+      </div>
+
+      <div className="px-mono mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[var(--color-fg-faint)]">
+        <span className="text-[var(--color-topic)]">#{decision.topic}</span>
+        <span>{decision.owner || "unassigned"}</span>
+        <span>{fmtDate(decision.decided_on)}</span>
+        {disproven.length > 0 && <span className="px-stamp">disproven</span>}
+      </div>
+
+      {decision.outcomes.length > 0 && (
+        <div className="px-thread mt-3 border-t border-[var(--color-hair)] pt-3">
+          {decision.outcomes.map((o) => (
+            <OutcomeThreadItem key={o.id} decision={decision} outcome={o} />
+          ))}
+        </div>
+      )}
+    </Panel>
+  );
+}
+
+/* ── states ─────────────────────────────────────────────── */
 export function Spinner({ label }: { label?: string }) {
   return (
-    <div className="flex items-center gap-3 text-sm text-zinc-400">
-      <div className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-600 border-t-zinc-200" />
+    <div className="flex items-center gap-3 text-sm text-[var(--color-fg-muted)]">
+      <div className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--color-hair-bright)] border-t-[var(--color-signal)]" />
       {label ?? "Working…"}
     </div>
   );
 }
 
+export function Skeleton({ className = "" }: { className?: string }) {
+  return <div className={`animate-pulse rounded-md bg-[var(--color-panel-2)] ${className}`} />;
+}
+
 export function ErrorNote({ message }: { message: string }) {
   return (
-    <div className="rounded-lg border border-rose-900 bg-rose-950/50 px-3 py-2 text-sm text-rose-300">
+    <div className="rounded-lg border border-[#7a2c37] bg-[#2a1015]/60 px-3 py-2 text-sm text-[var(--color-neg)]">
       {message}
     </div>
   );
 }
 
+export function EmptyState({ title, hint }: { title: string; hint?: string }) {
+  return (
+    <div className="px-panel flex flex-col items-center justify-center gap-1 p-10 text-center">
+      <div className="px-display text-[var(--color-fg-muted)]">{title}</div>
+      {hint && <div className="text-sm text-[var(--color-fg-faint)]">{hint}</div>}
+    </div>
+  );
+}
+
+/* ── form primitives ────────────────────────────────────── */
 export const inputCls =
-  "w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 outline-none focus:border-zinc-400";
-export const labelCls = "mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-500";
+  "w-full rounded-lg border border-[var(--color-hair)] bg-[var(--color-ink-2)] px-3 py-2 text-sm text-[var(--color-fg)] placeholder-[var(--color-fg-faint)] outline-none transition focus:border-[var(--color-signal-dim)]";
+export const labelCls = "px-eyebrow mb-1 block";
 export const buttonCls =
-  "rounded-lg bg-zinc-100 px-4 py-2 text-sm font-semibold text-zinc-900 transition hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed";
+  "inline-flex items-center gap-2 rounded-lg bg-[var(--color-signal)] px-4 py-2 text-sm font-semibold text-[#05201b] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40";
 export const ghostButtonCls =
-  "rounded-lg border border-zinc-700 px-3 py-1.5 text-sm text-zinc-300 transition hover:border-zinc-500";
+  "inline-flex items-center gap-2 rounded-lg border border-[var(--color-hair-bright)] px-3 py-1.5 text-sm text-[var(--color-fg-muted)] transition hover:border-[var(--color-signal-dim)] hover:text-[var(--color-fg)]";

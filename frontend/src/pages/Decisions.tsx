@@ -2,13 +2,17 @@ import { useEffect, useState } from "react";
 import { createOutcome, getDecision, listDecisions } from "../api";
 import {
   ErrorNote,
+  Eyebrow,
+  Skeleton,
   Spinner,
   StatusBadge,
+  TimeGap,
   ValenceChip,
   buttonCls,
+  daysBetween,
+  fmtDate,
   ghostButtonCls,
   inputCls,
-  labelCls,
 } from "../components";
 import type { Decision, Valence } from "../types";
 
@@ -34,19 +38,20 @@ function OutcomeForm({ decision, onSaved }: { decision: Decision; onSaved: () =>
       setEvidence("");
       onSaved();
     } catch (err) {
-      setError(String(err));
+      setError(String(err).replace(/^Error:\s*/, ""));
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <form onSubmit={submit} className="space-y-2 rounded-lg border border-zinc-800 p-3">
-      <div className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-        Log an outcome
-      </div>
+    <form
+      onSubmit={submit}
+      className="space-y-2.5 rounded-lg border border-[var(--color-hair)] bg-[var(--color-ink-2)] p-3.5"
+    >
+      <Eyebrow>log an outcome</Eyebrow>
       <textarea
-        className={`${inputCls} min-h-16`}
+        className={`${inputCls} min-h-16 resize-y`}
         placeholder="What actually happened?"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
@@ -64,7 +69,7 @@ function OutcomeForm({ decision, onSaved }: { decision: Decision; onSaved: () =>
         </select>
         <input
           className={inputCls}
-          placeholder="Evidence source (dashboard, report…)"
+          placeholder="evidence source (dashboard, report…)"
           value={evidence}
           onChange={(e) => setEvidence(e.target.value)}
         />
@@ -87,103 +92,118 @@ function Drawer({ id, onClose }: { id: string; onClose: () => void }) {
   const load = () =>
     getDecision(id)
       .then(setDecision)
-      .catch((e) => setError(String(e)));
+      .catch((e) => setError(String(e).replace(/^Error:\s*/, "")));
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   return (
-    <div className="fixed inset-0 z-20 flex justify-end bg-black/50" onClick={onClose}>
+    <div className="fixed inset-0 z-30 flex justify-end bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="h-full w-full max-w-xl overflow-y-auto border-l border-zinc-800 bg-zinc-950 p-6"
+        className="px-fade-up h-full w-full max-w-xl overflow-y-auto border-l border-[var(--color-hair-bright)] bg-[var(--color-ink)] p-6"
         onClick={(e) => e.stopPropagation()}
+        style={{ animationDuration: "0.28s" }}
       >
         <div className="flex items-start justify-between gap-3">
-          <h2 className="text-lg font-bold text-zinc-100">{decision?.title ?? "…"}</h2>
+          <div>
+            <Eyebrow>decision</Eyebrow>
+            <h2 className="px-display mt-1 text-lg leading-tight text-[var(--color-fg)]">
+              {decision?.title ?? "Loading…"}
+            </h2>
+          </div>
           <button className={ghostButtonCls} onClick={onClose}>
-            close
+            close ✕
           </button>
         </div>
-        {error && <ErrorNote message={error} />}
+        {error && <div className="mt-4"><ErrorNote message={error} /></div>}
+        {!decision && !error && <div className="mt-6"><Skeleton className="h-64" /></div>}
         {decision && (
-          <div className="mt-4 space-y-5 text-sm">
-            <div className="flex flex-wrap items-center gap-2">
+          <div className="mt-5 space-y-6 text-sm">
+            <div className="px-mono flex flex-wrap items-center gap-2 text-[11px] text-[var(--color-fg-faint)]">
               <StatusBadge status={decision.status} />
-              <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-xs">{decision.topic}</span>
-              <span className="text-xs text-zinc-500">
-                {decision.reversibility === "one_way" ? "one-way door" : "two-way door"} ·{" "}
-                {decision.decided_on} · {decision.owner}
-              </span>
+              <span className="text-[var(--color-topic)]">#{decision.topic}</span>
+              <span>{decision.reversibility === "one_way" ? "one-way door" : "two-way door"}</span>
+              <span>·</span>
+              <span>{fmtDate(decision.decided_on)}</span>
+              <span>·</span>
+              <span>{decision.owner || "unassigned"}</span>
             </div>
 
             <section>
-              <div className={labelCls}>Decision</div>
-              <p className="text-zinc-200">{decision.statement}</p>
+              <Eyebrow>what was decided</Eyebrow>
+              <p className="mt-1.5 leading-relaxed text-[var(--color-fg)]">{decision.statement}</p>
             </section>
 
             {decision.rationale && (
               <section>
-                <div className={labelCls}>Rationale</div>
-                <p className="text-zinc-300">{decision.rationale}</p>
+                <Eyebrow>rationale</Eyebrow>
+                <p className="mt-1.5 leading-relaxed text-[var(--color-fg-muted)]">
+                  {decision.rationale}
+                </p>
               </section>
             )}
 
             {decision.participants.length > 0 && (
               <section>
-                <div className={labelCls}>Participants</div>
-                <p className="text-zinc-300">{decision.participants.join(", ")}</p>
+                <Eyebrow>participants</Eyebrow>
+                <p className="px-mono mt-1.5 text-[var(--color-fg-muted)]">
+                  {decision.participants.join(" · ")}
+                </p>
               </section>
             )}
 
             {decision.assumptions.length > 0 && (
               <section>
-                <div className={labelCls}>Assumptions</div>
-                <ul className="space-y-1.5">
-                  {decision.assumptions.map((a) => (
-                    <li key={a.id} className="flex items-start gap-2">
-                      <span className="mt-0.5 rounded bg-zinc-800 px-1.5 py-0.5 text-xs text-zinc-400">
-                        {a.confidence}
-                      </span>
-                      <span
-                        className={
-                          a.invalidated_by_outcome_id
-                            ? "text-rose-300 line-through decoration-rose-500/60"
-                            : "text-zinc-300"
-                        }
-                      >
-                        {a.statement}
-                        {a.invalidated_by_outcome_id && (
-                          <span className="ml-2 text-xs text-rose-400 no-underline">
-                            (proven wrong)
+                <Eyebrow>assumptions</Eyebrow>
+                <ul className="mt-2 space-y-2">
+                  {decision.assumptions.map((a) => {
+                    const dead = !!a.invalidated_by_outcome_id;
+                    return (
+                      <li key={a.id} className="flex items-start gap-2.5">
+                        <span className="px-mono mt-0.5 rounded border border-[var(--color-hair)] px-1.5 py-0.5 text-[10px] uppercase text-[var(--color-fg-faint)]">
+                          {a.confidence}
+                        </span>
+                        <span className="flex-1">
+                          <span className={dead ? "px-strike" : "text-[var(--color-fg-muted)]"}>
+                            {a.statement}
                           </span>
-                        )}
-                      </span>
-                    </li>
-                  ))}
+                          {dead && <span className="px-stamp ml-2">disproven</span>}
+                        </span>
+                      </li>
+                    );
+                  })}
                 </ul>
               </section>
             )}
 
             <section>
-              <div className={labelCls}>Outcomes</div>
-              {decision.outcomes.length === 0 && (
-                <p className="text-zinc-500">None recorded yet.</p>
-              )}
-              <ul className="space-y-2">
-                {decision.outcomes.map((o) => (
-                  <li key={o.id} className="rounded-lg border border-zinc-800 p-3">
-                    <div className="flex items-center gap-2">
-                      <ValenceChip valence={o.valence} />
-                      <span className="text-xs text-zinc-500">{o.observed_on}</span>
+              <Eyebrow>outcomes — what actually happened</Eyebrow>
+              {decision.outcomes.length === 0 ? (
+                <p className="mt-1.5 text-[var(--color-fg-faint)]">
+                  No verdict yet. This decision is still open.
+                </p>
+              ) : (
+                <div className="px-thread mt-3">
+                  {decision.outcomes.map((o) => (
+                    <div key={o.id} className="px-thread-node pb-4 last:pb-0">
+                      <div className="flex items-center gap-2">
+                        <ValenceChip valence={o.valence} />
+                        <TimeGap days={daysBetween(decision.decided_on, o.observed_on)} />
+                        <span className="px-mono text-[10px] text-[var(--color-fg-faint)]">
+                          {fmtDate(o.observed_on)}
+                        </span>
+                      </div>
+                      <p className="mt-1.5 text-[var(--color-fg)]">{o.description}</p>
+                      {o.evidence_source && (
+                        <p className="px-mono mt-1 text-[10px] text-[var(--color-fg-faint)]">
+                          source · {o.evidence_source}
+                        </p>
+                      )}
                     </div>
-                    <p className="mt-1.5 text-zinc-200">{o.description}</p>
-                    {o.evidence_source && (
-                      <p className="mt-1 text-xs text-zinc-500">source: {o.evidence_source}</p>
-                    )}
-                  </li>
-                ))}
-              </ul>
+                  ))}
+                </div>
+              )}
             </section>
 
             <OutcomeForm decision={decision} onSaved={load} />
@@ -194,6 +214,8 @@ function Drawer({ id, onClose }: { id: string; onClose: () => void }) {
   );
 }
 
+const STATUSES = ["", "decided", "proposed", "reversed", "superseded"];
+
 export default function Decisions({
   refreshKey,
   initialOpen = null,
@@ -203,92 +225,126 @@ export default function Decisions({
   initialOpen?: string | null;
   onDrawerClosed?: () => void;
 }) {
-  const [decisions, setDecisions] = useState<Decision[]>([]);
+  const [decisions, setDecisions] = useState<Decision[] | null>(null);
   const [topic, setTopic] = useState("");
   const [status, setStatus] = useState("");
   const [open, setOpen] = useState<string | null>(initialOpen);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    setDecisions(null);
     listDecisions({ topic: topic || undefined, status: status || undefined })
       .then(setDecisions)
-      .catch((e) => setError(String(e)));
+      .catch((e) => {
+        setError(String(e).replace(/^Error:\s*/, ""));
+        setDecisions([]);
+      });
   }, [topic, status, refreshKey, open]);
 
   return (
-    <div className="mx-auto max-w-4xl">
-      <h1 className="text-2xl font-bold text-zinc-100">Decision register</h1>
-      <div className="mt-4 flex gap-2">
+    <div className="mx-auto max-w-5xl">
+      <Eyebrow>the register</Eyebrow>
+      <h1 className="px-display mt-2 text-2xl text-[var(--color-fg)]">Decision register</h1>
+      <p className="mt-1 text-sm text-[var(--color-fg-muted)]">
+        Every decision on record, with the outcomes that judged it.
+      </p>
+
+      <div className="mt-5 flex flex-wrap gap-2">
         <input
-          className={`${inputCls} max-w-48`}
+          className={`${inputCls} max-w-52`}
           placeholder="filter by topic…"
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
         />
-        <select
-          className={`${inputCls} max-w-40`}
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-        >
-          <option value="">any status</option>
-          <option value="decided">decided</option>
-          <option value="proposed">proposed</option>
-          <option value="reversed">reversed</option>
-          <option value="superseded">superseded</option>
-        </select>
+        <div className="flex gap-1.5">
+          {STATUSES.map((s) => (
+            <button
+              key={s || "any"}
+              onClick={() => setStatus(s)}
+              className={`px-mono rounded-lg border px-3 py-1.5 text-[11px] uppercase tracking-wider transition ${
+                status === s
+                  ? "border-[var(--color-signal-dim)] bg-[var(--color-signal-deep)] text-[var(--color-signal)]"
+                  : "border-[var(--color-hair)] text-[var(--color-fg-muted)] hover:border-[var(--color-hair-bright)]"
+              }`}
+            >
+              {s || "all"}
+            </button>
+          ))}
+        </div>
       </div>
+
       {error && (
         <div className="mt-4">
           <ErrorNote message={error} />
         </div>
       )}
-      <div className="mt-4 overflow-hidden rounded-xl border border-zinc-800">
+
+      <div className="mt-4 overflow-hidden rounded-xl border border-[var(--color-hair)]">
         <table className="w-full text-left text-sm">
-          <thead className="bg-zinc-900 text-xs uppercase tracking-wide text-zinc-500">
-            <tr>
-              <th className="px-4 py-2.5">Decision</th>
-              <th className="px-4 py-2.5">Topic</th>
-              <th className="px-4 py-2.5">Owner</th>
-              <th className="px-4 py-2.5">Status</th>
-              <th className="px-4 py-2.5">Outcomes</th>
+          <thead>
+            <tr className="border-b border-[var(--color-hair)] bg-[var(--color-panel)]">
+              {["decision", "topic", "owner", "status", "verdict"].map((h) => (
+                <th key={h} className="px-eyebrow px-4 py-2.5 font-normal">
+                  {h}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
-            {decisions.map((d) => (
-              <tr
-                key={d.id}
-                className="cursor-pointer border-t border-zinc-800/70 transition hover:bg-zinc-900/60"
-                onClick={() => setOpen(d.id)}
-              >
-                <td className="px-4 py-3 font-medium text-zinc-200">{d.title}</td>
-                <td className="px-4 py-3 text-zinc-400">{d.topic}</td>
-                <td className="px-4 py-3 text-zinc-400">{d.owner}</td>
-                <td className="px-4 py-3">
-                  <StatusBadge status={d.status} />
-                </td>
-                <td className="px-4 py-3">
-                  {d.outcomes.length > 0 ? (
-                    <div className="flex gap-1">
-                      {d.outcomes.map((o) => (
-                        <ValenceChip key={o.id} valence={o.valence} />
-                      ))}
-                    </div>
-                  ) : (
-                    <span className="text-xs text-zinc-600">—</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-            {decisions.length === 0 && (
+            {decisions === null &&
+              Array.from({ length: 6 }).map((_, i) => (
+                <tr key={i} className="border-t border-[var(--color-hair)]/60">
+                  <td colSpan={5} className="px-4 py-3">
+                    <Skeleton className="h-5 w-full" />
+                  </td>
+                </tr>
+              ))}
+            {decisions?.map((d) => {
+              const disproven = d.assumptions.some((a) => a.invalidated_by_outcome_id);
+              return (
+                <tr
+                  key={d.id}
+                  className="group cursor-pointer border-t border-[var(--color-hair)]/60 transition hover:bg-[var(--color-panel)]/60"
+                  onClick={() => setOpen(d.id)}
+                >
+                  <td className="px-4 py-3">
+                    <span className="font-medium text-[var(--color-fg)] group-hover:text-[var(--color-signal)]">
+                      {d.title}
+                    </span>
+                    {disproven && <span className="px-stamp ml-2">disproven</span>}
+                  </td>
+                  <td className="px-mono px-4 py-3 text-[var(--color-topic)]">#{d.topic}</td>
+                  <td className="px-mono px-4 py-3 text-[11px] text-[var(--color-fg-muted)]">
+                    {d.owner || "—"}
+                  </td>
+                  <td className="px-4 py-3">
+                    <StatusBadge status={d.status} />
+                  </td>
+                  <td className="px-4 py-3">
+                    {d.outcomes.length > 0 ? (
+                      <div className="flex gap-1">
+                        {d.outcomes.map((o) => (
+                          <ValenceChip key={o.id} valence={o.valence} />
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="px-mono text-[11px] text-[var(--color-fg-faint)]">pending</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+            {decisions?.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-zinc-500">
-                  No decisions yet — log one or run the seed script.
+                <td colSpan={5} className="px-4 py-10 text-center text-sm text-[var(--color-fg-muted)]">
+                  No decisions match — clear the filters or log one.
                 </td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
+
       {open && (
         <Drawer
           id={open}

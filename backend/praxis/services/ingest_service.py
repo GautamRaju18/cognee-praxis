@@ -3,10 +3,18 @@
 Extraction diffing: snapshot graph node ids, add+cognify the document, then
 diff. New Decision/Outcome/Assumption nodes are synced back into SQLite so the
 register (GET /decisions) and /check-proposal see auto-extracted decisions too.
+
+Runs in-process (cognify shares the single-writer graph DB with the server, so a
+separate writer process would just deadlock on the ladybug lock). The one failure
+mode is a weak LLM (e.g. local llama3.2) emitting invalid structured output, which
+makes cognee retry the whole cognify pipeline in a loop — so add+cognify is bounded
+by `_COGNIFY_TIMEOUT_S`; on timeout we surface a clean 504 instead of hanging.
 """
 
+import asyncio
 from datetime import date
 
+from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,6 +23,7 @@ from praxis.config import settings
 from praxis.services import cognee_service
 
 _DATE_FMT = "%Y-%m-%d"
+_COGNIFY_TIMEOUT_S = 150  # bounds a weak-model retry storm; a good pass is ~15-35s
 
 
 def _node_id(node) -> str:
@@ -25,6 +34,11 @@ def _node_props(node) -> dict:
     if isinstance(node, (tuple, list)) and len(node) > 1 and isinstance(node[1], dict):
         return node[1]
     return {}
+
+
+async def _add_and_cognify(text: str) -> None:
+    await cognee_service.add_text(text, dataset=settings.cognee_dataset)
+    await cognee_service.cognify_dataset(dataset=settings.cognee_dataset)
 
 
 def _parse_date(value: str | None) -> date:
@@ -40,8 +54,20 @@ async def ingest_document(session: AsyncSession, text: str) -> dict:
     nodes_before, _ = await cognee_service.get_graph_data()
     before_ids = {_node_id(n) for n in nodes_before}
 
-    await cognee_service.add_text(text, dataset=settings.cognee_dataset)
-    await cognee_service.cognify_dataset(dataset=settings.cognee_dataset)
+    try:
+        await asyncio.wait_for(
+            _add_and_cognify(text), timeout=_COGNIFY_TIMEOUT_S
+        )
+    except TimeoutError as exc:
+        raise HTTPException(
+            status_code=504,
+            detail=(
+                "Graph extraction did not converge in "
+                f"{_COGNIFY_TIMEOUT_S}s — the local model likely produced invalid "
+                "structured output. Try a shorter document or switch LLM_PROVIDER "
+                "to a stronger model (e.g. Gemini) for ingestion."
+            ),
+        ) from exc
 
     nodes_after, edges_after = await cognee_service.get_graph_data()
     new_nodes = [n for n in nodes_after if _node_id(n) not in before_ids]

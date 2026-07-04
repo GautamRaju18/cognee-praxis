@@ -1,9 +1,252 @@
 @import "tailwindcss";
 
+/* Fonts — bundled (offline-capable for the demo) */
+@import "@fontsource-variable/space-grotesk";
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/jetbrains-mono";
+
+/* ─────────────────────────────────────────────────────────────
+   Praxis — Decision Intelligence Terminal
+   Signature: the decision→outcome thread + the DISPROVEN stamp.
+   ───────────────────────────────────────────────────────────── */
+@theme {
+  --font-display: "Space Grotesk Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+
+  /* Ink base + raised surfaces */
+  --color-ink: #080a0e;
+  --color-ink-2: #0d1016;
+  --color-panel: #12151d;
+  --color-panel-2: #161a24;
+  --color-hair: #232a37;
+  --color-hair-bright: #313a4a;
+
+  /* Text */
+  --color-fg: #e7ecf3;
+  --color-fg-muted: #97a1b2;
+  --color-fg-faint: #5c6675;
+
+  /* Teal signal — brand, connections, the thread */
+  --color-signal: #4ee1c3;
+  --color-signal-dim: #2a9d8a;
+  --color-signal-deep: #0e3f39;
+
+  /* Valence — reserved for data (chips, graph, outcomes) */
+  --color-pos: #43e08b;
+  --color-neg: #fb6b7c;
+  --color-mixed: #f5b23d;
+  --color-decision: #f2c14e;
+  --color-person: #7aa2ff;
+  --color-topic: #b98bff;
+}
+
 :root {
   color-scheme: dark;
 }
 
+* {
+  border-color: var(--color-hair);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
 body {
-  @apply bg-zinc-950 text-zinc-200 antialiased;
+  margin: 0;
+  background: var(--color-ink);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Ambient grid + signal glow behind the whole app */
+.px-app-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(900px 600px at 78% -8%, rgba(78, 225, 195, 0.09), transparent 60%),
+    radial-gradient(700px 500px at 8% 108%, rgba(122, 162, 255, 0.06), transparent 60%),
+    linear-gradient(var(--color-ink), var(--color-ink));
+}
+.px-app-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, rgba(120, 140, 170, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(120, 140, 170, 0.04) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(circle at 50% 30%, black, transparent 85%);
+}
+
+/* Typographic primitives */
+.px-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+.px-mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.px-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-fg-faint);
+}
+
+/* Panels + hairline surfaces */
+.px-panel {
+  background: linear-gradient(180deg, var(--color-panel-2), var(--color-panel));
+  border: 1px solid var(--color-hair);
+  border-radius: 14px;
+}
+.px-panel-hover {
+  transition:
+    border-color 0.18s ease,
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+.px-panel-hover:hover {
+  border-color: var(--color-hair-bright);
+  box-shadow:
+    0 0 0 1px rgba(78, 225, 195, 0.08),
+    0 18px 40px -24px rgba(0, 0, 0, 0.9);
+}
+
+/* Signal accents */
+.px-glow {
+  box-shadow:
+    0 0 0 1px rgba(78, 225, 195, 0.25),
+    0 0 30px -6px rgba(78, 225, 195, 0.35);
+}
+.px-signal-text {
+  color: var(--color-signal);
+}
+
+/* The signature: decision→outcome thread */
+.px-thread {
+  position: relative;
+  padding-left: 22px;
+}
+.px-thread::before {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  background: linear-gradient(180deg, var(--color-decision), var(--color-signal), var(--color-neg));
+  border-radius: 2px;
+  opacity: 0.55;
+}
+.px-thread-node {
+  position: relative;
+}
+.px-thread-node::before {
+  content: "";
+  position: absolute;
+  left: -18px;
+  top: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-ink);
+  border: 2px solid var(--color-signal);
+  box-shadow: 0 0 10px -1px var(--color-signal);
+}
+
+/* Time-gap pill (the "+94 days" between decision and outcome) */
+.px-gap {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: var(--color-signal);
+  background: var(--color-signal-deep);
+  border: 1px solid rgba(78, 225, 195, 0.3);
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+
+/* DISPROVEN stamp — the case-file mark for invalidated assumptions */
+.px-stamp {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--color-neg);
+  border: 1.5px solid var(--color-neg);
+  border-radius: 4px;
+  padding: 1px 6px;
+  transform: rotate(-4deg);
+  opacity: 0.9;
+  text-transform: uppercase;
+}
+.px-strike {
+  text-decoration: line-through;
+  text-decoration-color: rgba(251, 107, 124, 0.7);
+  color: var(--color-fg-faint);
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-hair);
+  border-radius: 999px;
+  border: 3px solid var(--color-ink);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-hair-bright);
+}
+
+/* Focus visibility (accessibility floor) */
+:focus-visible {
+  outline: 2px solid var(--color-signal);
+  outline-offset: 2px;
+}
+
+@keyframes px-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.px-fade-up {
+  animation: px-fade-up 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@keyframes px-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.px-live-dot {
+  animation: px-pulse 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
 }

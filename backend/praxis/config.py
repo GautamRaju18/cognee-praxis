@@ -43,5 +43,11 @@ class Settings:
     llm_provider: str = os.getenv("LLM_PROVIDER", "")
     llm_model: str = os.getenv("LLM_MODEL", "")
 
+    # Demo cache: serve curated, grounded answers for the scripted demo queries
+    # instantly and deterministically (no LLM), with the live path as fallback.
+    # On by default so the demo never depends on model latency/quota; set
+    # PRAXIS_DEMO_CACHE=false to force every query through the live LLM.
+    demo_cache: bool = os.getenv("PRAXIS_DEMO_CACHE", "true").lower() not in ("0", "false", "no")
+
 
 settings = Settings()

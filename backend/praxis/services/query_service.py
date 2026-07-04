@@ -4,8 +4,20 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from praxis import models
+from praxis import demo_cache, models
+from praxis.config import settings
 from praxis.services import cognee_service
+
+
+async def _decisions_by_titles(
+    session: AsyncSession, titles: list[str]
+) -> list[models.Decision]:
+    """Resolve curated titles to real SQLite decisions, preserving order."""
+    wanted = {t.lower(): i for i, t in enumerate(titles)}
+    result = await session.execute(select(models.Decision))
+    hits = [d for d in result.scalars().all() if d.title.lower() in wanted]
+    hits.sort(key=lambda d: wanted[d.title.lower()])
+    return hits
 
 QUERY_SYSTEM_PROMPT = """You are Praxis, an institutional decision-memory assistant.
 Answer strictly from the provided graph context of decisions, rationales, assumptions
@@ -21,6 +33,12 @@ async def _decisions_cited_in(session: AsyncSession, text: str) -> list[models.D
 
 
 async def answer_query(session: AsyncSession, question: str) -> dict:
+    if settings.demo_cache:
+        hit = demo_cache.match_query(question)
+        if hit:
+            cited = await _decisions_by_titles(session, hit.cited_titles)
+            return {"answer": hit.answer, "cited_decisions": cited, "context": "", "cached": True}
+
     context = await cognee_service.graph_context(question)
     answer = await cognee_service.graph_completion(question, system_prompt=QUERY_SYSTEM_PROMPT)
     cited = await _decisions_cited_in(session, f"{context}\n{answer}")
@@ -49,6 +67,21 @@ Only reference decisions that are actually in the provided history."""
 async def check_proposal(
     session: AsyncSession, proposal_text: str, topic: str | None = None
 ) -> dict:
+    if settings.demo_cache:
+        hit = demo_cache.match_proposal(proposal_text, topic)
+        if hit:
+            history = await _decisions_by_titles(session, hit.relevant_titles)
+            title_to_id = {d.title.lower(): d.id for d in history}
+            contradicts = [
+                title_to_id[t.lower()] for t in hit.contradicts_titles if t.lower() in title_to_id
+            ]
+            return {
+                "repeats_prior": hit.repeats_prior,
+                "contradicts": contradicts,
+                "relevant_history": history,
+                "warning": hit.warning,
+            }
+
     probe = f"{proposal_text}\nTopic: {topic}" if topic else proposal_text
     context = await cognee_service.graph_context(probe)
 

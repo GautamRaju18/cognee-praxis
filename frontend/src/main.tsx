@@ -1,10 +1,6 @@
-import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./index.css";
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-);
+// StrictMode intentionally omitted: the 3D graph (WebGL) double-mounts under it.
+ReactDOM.createRoot(document.getElementById("root")!).render(<App />);

@@ -1,6 +1,14 @@
 import { useState } from "react";
 import { createDecision } from "../api";
-import { ErrorNote, Spinner, buttonCls, ghostButtonCls, inputCls, labelCls } from "../components";
+import {
+  ErrorNote,
+  Eyebrow,
+  Spinner,
+  buttonCls,
+  ghostButtonCls,
+  inputCls,
+  labelCls,
+} from "../components";
 import type { Confidence, DecisionCreate } from "../types";
 
 interface AssumptionDraft {
@@ -63,9 +71,11 @@ export default function LogDecision({ onLogged }: { onLogged: () => void }) {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="text-2xl font-bold text-zinc-100">Log a decision</h1>
-      <p className="mt-1 text-sm text-zinc-400">
-        The record is stored in the register and extracted into the memory graph.
+      <Eyebrow>capture</Eyebrow>
+      <h1 className="px-display mt-2 text-2xl text-[var(--color-fg)]">Log a decision</h1>
+      <p className="mt-1 text-sm text-[var(--color-fg-muted)]">
+        Stored in the register and extracted into the memory graph — ready to be judged by its
+        outcome later.
       </p>
 
       <form onSubmit={submit} className="mt-6 space-y-4">
@@ -212,7 +222,7 @@ export default function LogDecision({ onLogged }: { onLogged: () => void }) {
         </div>
         {error && <ErrorNote message={error} />}
         {done && (
-          <div className="rounded-lg border border-emerald-900 bg-emerald-950/50 px-3 py-2 text-sm text-emerald-300">
+          <div className="rounded-lg border border-[#1f6b43] bg-[#0c2418]/70 px-3 py-2 text-sm text-[var(--color-pos)]">
             {done}
           </div>
         )}
