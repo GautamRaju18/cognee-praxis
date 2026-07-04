@@ -137,6 +137,59 @@ harmless, and useful for recall.
   installed locally (llama3.2 3B) but CPU extraction latency and 3B JSON-schema
   adherence make it a poor default; it stays an env-swap option.
 
+## Phase 6 — /ingest/document (2026-07-04)
+
+- Extraction reporting works by diffing graph node ids before/after cognify; new
+  Decision nodes (plus their based_on / resulted_in neighbors, and owner/topic/
+  rationale resolved through edges) are synced into SQLite so auto-extracted decisions
+  appear in the register and in /check-proposal.
+
+## Phases 7–8 — Frontend + /graph (2026-07-04)
+
+- Vite 7 + React 19 + TS + Tailwind v4 (`@tailwindcss/vite`, no config file); no
+  router — state-based nav. Typed API client; `VITE_API_URL` overridable.
+- Company Brain: `react-force-graph-2d`; GET /graph filters to ontology-level types by
+  default (`?full=true` for plumbing nodes); Decision nodes carry their register id
+  (join on `cognee_node_id`) enabling graph→drawer deep links.
+- Chrome-extension screenshots of localhost pages stall on document_idle; verified via
+  tab title + console (zero errors) + curl instead.
+
+## Phase 9 — Seed + docs (2026-07-04)
+
+- `make seed` is **LLM-generation-free**: it stages composed documents with add()
+  (registers the dataset — a search precondition), then builds the graph directly from
+  ontology DataPoints via `add_data_points` (embeddings only) and writes the
+  supersedes edge explicitly. `--documents` additionally cognifies the staged docs.
+  Verified: 48 nodes / 51 edges (9 Decision, 5 Outcome, resulted_in ×5,
+  invalidated_by ×2, supersedes ×1) and the churn demo query answers with 5 cited
+  decisions.
+- **Discoveries that cost time:**
+  - `search()` requires cognee's relational DB + default user; the direct-push path
+    bypasses their implicit creation → `cognee_service.ensure_setup()` (wraps
+    `cognee.low_level.setup()`) runs before `add_data_points`, and the dataset must
+    exist (hence staging docs with add()).
+  - **Cognee's settings prefer the `.env` FILE over process env vars** (custom
+    pydantic-settings priority). Model hops must edit `.env`; `$env:LLM_MODEL=...`
+    overrides are silently ignored.
+  - **The embedded graph store (ladybug/kuzu) is single-process.** Run the API *or*
+    scripts/tests, never both; cognee can also leave a multiprocessing child alive
+    holding the lock (kill stray `python` processes if `Could not set lock` appears).
+  - Free-tier embedding quota (gemini-embedding: 100 requests/bucket) is hit during
+    seeding; cognee's tenacity retries ride it out — seed just takes longer.
+  - **Quota map of this Gemini key (free tier)**: only gemini-3.5-flash,
+    gemini-2.5-flash and gemini-2.5-flash-lite have generation quota (20/day each);
+    2.0-flash, 2.0-flash-lite and 2.5-pro report `limit: 0`. All three usable buckets
+    were consumed on build day (2026-07-04); they reset at midnight Pacific.
+    Default left at `gemini/gemini-2.5-flash`.
+
+### Verification status at end of build day
+- Everything green in pytest earlier today: health, decisions e2e, the critical
+  decision→outcome test, /query + /check-proposal (referral scenario), ingest, graph.
+- Seeded demo verified live: graph shape (48 nodes/51 edges, all ontology edge types)
+  and the churn /query with 5 cited decisions.
+- Not re-verified after seeding (quota exhausted): /check-proposal against seed data —
+  same code path as its passing pytest, so expected fine after quota reset.
+
 ### Assumptions / cautions
 - `cognee.prune.prune_data()` wipes *all* datasets in the configured storage root.
   Because storage is project-local, that's safe for `make reset-memory`, but tests will

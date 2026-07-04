@@ -136,13 +136,25 @@ async def add_graph_edges(edges: list[tuple[str, str, str]]) -> None:
     await engine.add_edges(payload)
 
 
+async def ensure_setup() -> None:
+    """Create cognee's relational DB + default user if missing.
+
+    Normally add()/cognify() do this implicitly; the direct push path
+    (push_data_points) bypasses them, and search() refuses to run without it.
+    """
+    _cognee()
+    from cognee.low_level import setup
+
+    await setup()
+
+
 async def push_data_points(points: list) -> None:
     """Directly upsert ontology DataPoint instances (nodes + typed edges).
 
     Bypasses LLM extraction — used for authoritative, deterministic graph
     writes (e.g. the decision->outcome RESULTED_IN edge).
     """
-    _cognee()
+    await ensure_setup()
     from cognee.tasks.storage import add_data_points
 
     await add_data_points(points)
