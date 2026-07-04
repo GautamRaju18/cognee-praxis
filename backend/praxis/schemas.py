@@ -89,6 +89,12 @@ class ProposalCheckOut(BaseModel):
     warning: str = ""
 
 
+class IngestReport(BaseModel):
+    chars_ingested: int
+    decisions: list[DecisionOut] = []  # newly created register entries
+    extracted: dict[str, list[str]] = {}  # names of new graph nodes by kind
+
+
 class RevisitReport(BaseModel):
     newly_linked_outcomes: list[dict] = []
     invalidated_assumptions: list[dict] = []
