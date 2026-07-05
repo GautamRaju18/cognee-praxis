@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getBrainStats, listDecisions, type BrainStats } from "../api";
 import {
+  CountUp,
   DecisionCard,
   Eyebrow,
   Panel,
@@ -11,6 +12,7 @@ import {
   daysBetween,
   fmtDate,
 } from "../components";
+import Tilt from "../Tilt";
 import type { Decision, Outcome } from "../types";
 
 interface Reckoning {
@@ -43,12 +45,14 @@ function pickReckoning(decisions: Decision[]): Reckoning | null {
 
 function Stat({ value, label, accent }: { value: number; label: string; accent?: string }) {
   return (
-    <Panel className="px-4 py-3.5">
-      <div className={`px-mono text-3xl font-medium ${accent ?? "text-[var(--color-fg)]"}`}>
-        {value}
-      </div>
-      <div className="px-eyebrow mt-1">{label}</div>
-    </Panel>
+    <Tilt max={10}>
+      <Panel className="px-4 py-3.5">
+        <div className={`px-mono text-3xl font-medium ${accent ?? "text-[var(--color-fg)]"}`}>
+          <CountUp value={value} />
+        </div>
+        <div className="px-eyebrow mt-1">{label}</div>
+      </Panel>
+    </Tilt>
   );
 }
 
@@ -56,7 +60,7 @@ export default function Dashboard({
   onNavigate,
   onOpenDecision,
 }: {
-  onNavigate: (k: "ask" | "brain" | "decisions" | "check") => void;
+  onNavigate: (k: string) => void;
   onOpenDecision: (id: string) => void;
 }) {
   const [decisions, setDecisions] = useState<Decision[] | null>(null);
@@ -76,6 +80,39 @@ export default function Dashboard({
     .slice()
     .sort((a, b) => +new Date(b.decided_on) - +new Date(a.decided_on))
     .slice(0, 4);
+
+  if (decisions && decisions.length === 0) {
+    return (
+      <div className="mx-auto flex min-h-[60vh] max-w-xl flex-col items-center justify-center text-center">
+        <div className="px-glow flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--color-signal-deep)] text-2xl text-[var(--color-signal)]">
+          ◈
+        </div>
+        <h1 className="px-display mt-5 text-2xl text-[var(--color-fg)]">Your company brain is empty</h1>
+        <p className="mt-2 text-sm text-[var(--color-fg-muted)]">
+          Praxis has no decisions yet. Log your first one, paste a meeting transcript to
+          auto-extract them, or run{" "}
+          <code className="px-mono rounded bg-[var(--color-panel-2)] px-1.5 py-0.5 text-[12px] text-[var(--color-signal)]">
+            make seed
+          </code>{" "}
+          for a demo company.
+        </p>
+        <div className="mt-6 flex gap-3">
+          <button
+            onClick={() => onNavigate("log")}
+            className="inline-flex items-center gap-2 rounded-lg bg-[var(--color-signal)] px-4 py-2 text-sm font-semibold text-[#05201b] transition hover:brightness-110"
+          >
+            + Log a decision
+          </button>
+          <button
+            onClick={() => onNavigate("ingest")}
+            className="inline-flex items-center gap-2 rounded-lg border border-[var(--color-hair-bright)] px-4 py-2 text-sm text-[var(--color-fg-muted)] transition hover:text-[var(--color-fg)]"
+          >
+            Ingest a transcript
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -171,8 +208,10 @@ export default function Dashboard({
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           {!decisions
             ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-32" />)
-            : recent.map((d) => (
-                <DecisionCard key={d.id} decision={d} onOpen={() => onOpenDecision(d.id)} compact />
+            : recent.map((d, i) => (
+                <div key={d.id} className="px-fade-up" style={{ animationDelay: `${i * 60}ms` }}>
+                  <DecisionCard decision={d} onOpen={() => onOpenDecision(d.id)} compact />
+                </div>
               ))}
         </div>
       </section>

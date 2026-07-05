@@ -1,5 +1,7 @@
+import { X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ForceGraph3D from "react-force-graph-3d";
+import * as THREE from "three";
 import SpriteText from "three-spritetext";
 import { getGraph } from "../api";
 import { ErrorNote, Spinner, ghostButtonCls } from "../components";
@@ -13,14 +15,6 @@ const TYPE_COLOR: Record<string, string> = {
   Person: "#7aa2ff",
   Topic: "#b98bff",
   Rationale: "#4ee1c3",
-};
-const TYPE_SIZE: Record<string, number> = {
-  Decision: 9,
-  Outcome: 6,
-  Assumption: 4,
-  Rationale: 3,
-  Person: 3,
-  Topic: 4,
 };
 const DISPROVEN = "#fb6b7c";
 
@@ -37,6 +31,63 @@ const LINK_COLOR: Record<string, string> = {
 };
 const FLOW_LINKS = new Set(["resulted_in", "invalidated_by", "supersedes"]);
 
+/* Per-type geometry radius + shape — distinct shapes make types legible at a glance. */
+const GEO_RADIUS: Record<string, number> = {
+  Decision: 5,
+  Outcome: 3.8,
+  Topic: 3.2,
+  Assumption: 2.6,
+  Person: 2.4,
+  Rationale: 1.8,
+};
+const _geoCache: Record<string, THREE.BufferGeometry> = {};
+function geometryFor(type: string): THREE.BufferGeometry {
+  if (_geoCache[type]) return _geoCache[type]; // reuse (skill: geometry reuse)
+  const s = GEO_RADIUS[type] ?? 2.4;
+  let g: THREE.BufferGeometry;
+  switch (type) {
+    case "Decision":
+      g = new THREE.IcosahedronGeometry(s, 0);
+      break;
+    case "Outcome":
+      g = new THREE.OctahedronGeometry(s, 0);
+      break;
+    case "Assumption":
+      g = new THREE.TetrahedronGeometry(s, 0);
+      break;
+    case "Topic":
+      g = new THREE.BoxGeometry(s * 1.5, s * 1.5, s * 1.5);
+      break;
+    case "Rationale":
+      g = new THREE.SphereGeometry(s, 12, 12);
+      break;
+    default:
+      g = new THREE.SphereGeometry(s, 20, 20); // Person + fallback
+  }
+  _geoCache[type] = g;
+  return g;
+}
+
+/* Soft radial-gradient sprite → an additive glow aura behind each node. */
+let _glowTex: THREE.Texture | null = null;
+function glowTexture(): THREE.Texture {
+  if (_glowTex) return _glowTex;
+  const size = 128;
+  const c = document.createElement("canvas");
+  c.width = c.height = size;
+  const ctx = c.getContext("2d")!;
+  const g = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  g.addColorStop(0, "rgba(255,255,255,1)");
+  g.addColorStop(0.22, "rgba(255,255,255,0.55)");
+  g.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, size, size);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  _glowTex = tex;
+  return tex;
+}
+
 interface FNode {
   id: string;
   label: string;
@@ -46,7 +97,14 @@ interface FNode {
   x?: number;
   y?: number;
   z?: number;
+  __mat?: THREE.MeshStandardMaterial;
+  __halo?: THREE.SpriteMaterial;
+  __baseEmissive?: number;
+  __label?: { visible: boolean };
 }
+
+/** Labels shown at rest; the rest appear on hover/highlight to keep the graph clean. */
+const ALWAYS_LABEL = new Set(["Decision", "Topic"]);
 interface FLink {
   source: string | FNode;
   target: string | FNode;
@@ -55,7 +113,13 @@ interface FLink {
 
 const idOf = (v: string | FNode) => (typeof v === "string" ? v : v.id);
 
-export default function Brain({ onOpenDecision }: { onOpenDecision: (id: string) => void }) {
+export default function Brain({
+  onOpenDecision,
+  focusDecisionId = null,
+}: {
+  onOpenDecision: (id: string) => void;
+  focusDecisionId?: string | null;
+}) {
   const fgRef = useRef<any>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 800, h: 600 });
@@ -66,6 +130,10 @@ export default function Brain({ onOpenDecision }: { onOpenDecision: (id: string)
   const [query, setQuery] = useState("");
   const [highlightNodes, setHighlightNodes] = useState<Set<string>>(new Set());
   const [highlightLinks, setHighlightLinks] = useState<Set<FLink>>(new Set());
+  const highlightRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    highlightRef.current = highlightNodes;
+  }, [highlightNodes]);
 
   useEffect(() => {
     getGraph()
@@ -94,27 +162,49 @@ export default function Brain({ onOpenDecision }: { onOpenDecision: (id: string)
     };
   }, []);
 
-  // Bloom glow — makes nodes read as neurons firing. Guarded for headless/WebGL-less.
+  // Scene atmosphere: depth fog + three-point lighting so the PBR node materials
+  // read with dimension, plus a richer bloom pass for the neural-glow look.
   useEffect(() => {
-    if (!raw || !fgRef.current) return;
+    const fg = fgRef.current;
+    if (!raw || !fg) return;
+    const scene: THREE.Scene = fg.scene();
+    (window as any).__brainFg = fg; // debug handle: pause/resume animation for screenshots
+
+    scene.fog = new THREE.FogExp2(0x080a0e, 0.0018); // distant nodes fade into ink
+
+    const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+    const key = new THREE.PointLight(0x4ee1c3, 0.7, 0, 1.6); // teal key
+    key.position.set(220, 160, 180);
+    const fill = new THREE.PointLight(0x7aa2ff, 0.45, 0, 1.6); // blue fill
+    fill.position.set(-220, -120, -160);
+    const rim = new THREE.DirectionalLight(0xffffff, 0.35); // rim for edge definition
+    rim.position.set(0, 200, -240);
+    scene.add(ambient, key, fill, rim);
+
     let cancelled = false;
+    let bloom: { dispose?: () => void } | null = null;
     (async () => {
       try {
         const { UnrealBloomPass } = await import(
           "three/examples/jsm/postprocessing/UnrealBloomPass.js"
         );
         if (cancelled || !fgRef.current) return;
-        const bloom = new UnrealBloomPass();
-        bloom.strength = 1.1;
-        bloom.radius = 0.55;
-        bloom.threshold = 0.12;
-        fgRef.current.postProcessingComposer().addPass(bloom);
+        const pass = new UnrealBloomPass();
+        pass.strength = 1.0; // glowy — the dark-pill labels stay readable through it
+        pass.radius = 0.65;
+        pass.threshold = 0.25;
+        fgRef.current.postProcessingComposer().addPass(pass);
+        bloom = pass as unknown as { dispose?: () => void };
       } catch {
-        /* bloom optional */
+        /* bloom optional (headless / no WebGL) */
       }
     })();
+
     return () => {
       cancelled = true;
+      scene.remove(ambient, key, fill, rim);
+      scene.fog = null;
+      bloom?.dispose?.();
     };
   }, [raw]);
 
@@ -180,6 +270,24 @@ export default function Brain({ onOpenDecision }: { onOpenDecision: (id: string)
     [focus],
   );
 
+  // gentle idle auto-rotation; pauses while a node is selected (camera is focusing)
+  useEffect(() => {
+    const controls = fgRef.current?.controls?.();
+    if (!controls) return;
+    controls.autoRotate = !selected && !focusDecisionId;
+    controls.autoRotateSpeed = 0.5;
+  }, [raw, selected, focusDecisionId]);
+
+  // deep-link: focus a decision's node when arriving from a citation
+  useEffect(() => {
+    if (!raw || !focusDecisionId) return;
+    const node = data.nodes.find((n) => n.decision_id === focusDecisionId);
+    if (!node) return;
+    const t = setTimeout(() => handleClick(node), 1300); // let the sim place nodes first
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [raw, focusDecisionId]);
+
   // search-to-highlight
   useEffect(() => {
     if (!query.trim()) return;
@@ -189,24 +297,95 @@ export default function Brain({ onOpenDecision }: { onOpenDecision: (id: string)
     setHighlightLinks(new Set());
   }, [query, data.nodes]);
 
-  const nodeColor = useCallback(
-    (n: FNode) => {
-      const base = n.disproven ? DISPROVEN : (TYPE_COLOR[n.type] ?? "#8892a0");
-      if (highlightNodes.size === 0) return base;
-      return highlightNodes.has(n.id) ? base : "#2a2f3a";
-    },
-    [highlightNodes],
-  );
+  // Custom node: a per-type emissive solid (PBR) + a mono label, grouped.
+  const buildNode = useCallback((n: FNode) => {
+    const color = n.disproven ? DISPROVEN : (TYPE_COLOR[n.type] ?? "#8892a0");
+    const base = n.disproven ? 0.75 : 0.5;
+    const mat = new THREE.MeshStandardMaterial({
+      color,
+      emissive: color,
+      emissiveIntensity: base,
+      metalness: 0.3,
+      roughness: 0.35,
+      transparent: true,
+      opacity: 1,
+    });
+    const group = new THREE.Group();
 
-  const label = useCallback((n: FNode) => {
-    const spr = new SpriteText(n.label.length > 34 ? n.label.slice(0, 32) + "…" : n.label);
-    spr.color = n.disproven ? DISPROVEN : (TYPE_COLOR[n.type] ?? "#c3ccd8");
-    spr.textHeight = n.type === "Decision" ? 5 : 3.4;
+    // soft glow aura (additive) — the "catchy" glow, controlled per node
+    const rr = GEO_RADIUS[n.type] ?? 2.4;
+    const halo = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: glowTexture(),
+        color,
+        transparent: true,
+        opacity: n.disproven ? 0.6 : 0.5,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      }),
+    );
+    halo.scale.setScalar(rr * (n.type === "Decision" ? 7 : 5.5));
+    (halo as any).renderOrder = -1;
+    group.add(halo);
+    group.add(new THREE.Mesh(geometryFor(n.type), mat));
+
+    const text = n.label.length > 34 ? n.label.slice(0, 32) + "…" : n.label;
+    const spr = new SpriteText(text);
+    // Solid dark pill + bright text so labels stay readable over the node glow.
+    spr.color = "#eef3f9";
+    spr.backgroundColor = "rgba(5,7,11,0.82)";
+    spr.padding = 2.4;
+    spr.borderRadius = 3;
     spr.fontFace = "JetBrains Mono, monospace";
+    spr.fontWeight = "600";
+    spr.textHeight = n.type === "Decision" ? 4 : 3.1;
     (spr as any).material.depthWrite = false;
-    (spr as any).position.y = (TYPE_SIZE[n.type] ?? 3) + 3;
-    return spr;
+    (spr as any).material.depthTest = false; // labels always render on top, never behind glow
+    (spr as any).renderOrder = 10;
+    (spr as any).position.y = (GEO_RADIUS[n.type] ?? 2.4) + 6.5;
+    spr.visible = ALWAYS_LABEL.has(n.type); // rest reveal on hover/highlight
+    group.add(spr);
+
+    n.__mat = mat; // handle for the pulse/dim loop
+    n.__halo = halo.material;
+    n.__baseEmissive = base;
+    n.__label = spr as unknown as { visible: boolean };
+    return group;
   }, []);
+
+  // Per-frame: dim non-highlighted nodes and pulse the disproven (proven-wrong) ones.
+  useEffect(() => {
+    if (!raw) return;
+    let raf = 0;
+    const start = performance.now();
+    const tick = () => {
+      const hl = highlightRef.current;
+      const anyHl = hl.size > 0;
+      const t = (performance.now() - start) / 1000;
+      for (const n of data.nodes) {
+        const mat = n.__mat;
+        if (!mat) continue;
+        const dimmed = anyHl && !hl.has(n.id);
+        const targetOpacity = dimmed ? 0.14 : 1;
+        let targetEmis = dimmed ? 0.04 : (n.__baseEmissive ?? 0.5);
+        if (n.disproven && !dimmed) targetEmis = 0.6 + 0.4 * Math.sin(t * 3);
+        mat.opacity += (targetOpacity - mat.opacity) * 0.18;
+        mat.emissiveIntensity += (targetEmis - mat.emissiveIntensity) * 0.18;
+        const halo = n.__halo;
+        if (halo) {
+          let targetHalo = dimmed ? 0.06 : n.disproven ? 0.62 : 0.5;
+          if (n.disproven && !dimmed) targetHalo = 0.5 + 0.28 * Math.sin(t * 3);
+          halo.opacity += (targetHalo - halo.opacity) * 0.18;
+        }
+        if (n.__label) {
+          n.__label.visible = hl.has(n.id) || (!anyHl && ALWAYS_LABEL.has(n.type));
+        }
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [raw, data.nodes]);
 
   const relCounts = useMemo(() => {
     const c = new Map<string, number>();
@@ -251,13 +430,9 @@ export default function Brain({ onOpenDecision }: { onOpenDecision: (id: string)
           height={size.h}
           graphData={data}
           backgroundColor="#080a0e"
+          controlType="orbit"
           showNavInfo={false}
-          nodeColor={nodeColor as any}
-          nodeVal={((n: FNode) => TYPE_SIZE[n.type] ?? 3) as any}
-          nodeOpacity={0.95}
-          nodeResolution={16}
-          nodeThreeObjectExtend
-          nodeThreeObject={label as any}
+          nodeThreeObject={buildNode as any}
           linkColor={
             ((l: FLink) =>
               highlightLinks.has(l)
@@ -266,8 +441,9 @@ export default function Brain({ onOpenDecision }: { onOpenDecision: (id: string)
                   ? "#1b2029"
                   : (LINK_COLOR[l.relationship] ?? "#39424f")) as any
           }
-          linkWidth={((l: FLink) => (highlightLinks.has(l) ? 2.2 : 0.5)) as any}
-          linkOpacity={0.55}
+          linkCurvature={0.18}
+          linkWidth={((l: FLink) => (highlightLinks.has(l) ? 2.4 : 0.6)) as any}
+          linkOpacity={0.5}
           linkDirectionalParticles={
             ((l: FLink) => (FLOW_LINKS.has(l.relationship) || highlightLinks.has(l) ? 3 : 0)) as any
           }
@@ -354,13 +530,14 @@ export default function Brain({ onOpenDecision }: { onOpenDecision: (id: string)
               </div>
             </div>
             <button
-              className="px-mono text-[var(--color-fg-faint)] transition hover:text-[var(--color-fg)]"
+              aria-label="Close details"
+              className="text-[var(--color-fg-faint)] transition hover:text-[var(--color-fg)]"
               onClick={() => {
                 setSelected(null);
                 focus(null);
               }}
             >
-              ✕
+              <X size={16} />
             </button>
           </div>
           {selected.decision_id && (

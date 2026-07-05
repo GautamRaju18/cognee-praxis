@@ -49,10 +49,18 @@ export interface DecisionCreate {
   supersedes_id?: string | null;
 }
 
+export interface ReasoningTriple {
+  source: string;
+  relation: string;
+  target: string;
+  valence: Valence | null;
+}
+
 export interface QueryResult {
   answer: string;
   cited_decisions: Decision[];
   context: string;
+  reasoning: ReasoningTriple[];
 }
 
 export interface ProposalCheck {

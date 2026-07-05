@@ -76,10 +76,23 @@ class DecisionOut(BaseModel):
     outcomes: list[OutcomeOut] = []
 
 
+class DecisionUpdate(BaseModel):
+    status: DecisionStatus | None = None
+    supersedes_id: str | None = None
+
+
+class ReasoningTriple(BaseModel):
+    source: str
+    relation: str
+    target: str
+    valence: str | None = None
+
+
 class QueryOut(BaseModel):
     answer: str
     cited_decisions: list[DecisionOut] = []
     context: str = ""
+    reasoning: list[ReasoningTriple] = []
 
 
 class ProposalCheckOut(BaseModel):

@@ -106,3 +106,43 @@ async def list_decisions(
 
 async def get_decision(session: AsyncSession, decision_id: str) -> models.Decision | None:
     return await session.get(models.Decision, decision_id)
+
+
+async def update_decision(
+    session: AsyncSession,
+    decision_id: str,
+    status: str | None = None,
+    supersedes_id: str | None = None,
+) -> models.Decision | None:
+    """Evolve a decision's lifecycle (reverse / supersede / reactivate).
+
+    SQLite-only and synchronous — no re-cognify — so it's instant and can't hang.
+    The supersedes edge is mirrored into the graph best-effort; a graph hiccup
+    never fails the status change (SQLite is the system of record)."""
+    decision = await session.get(models.Decision, decision_id)
+    if decision is None:
+        return None
+
+    if status is not None:
+        decision.status = status
+
+    superseded: models.Decision | None = None
+    if supersedes_id:
+        superseded = await session.get(models.Decision, supersedes_id)
+        if superseded is None:
+            raise ValueError(f"supersedes_id {supersedes_id} not found")
+        decision.supersedes_id = supersedes_id
+        superseded.status = "superseded"
+
+    await session.commit()
+    await session.refresh(decision)
+
+    if superseded is not None and superseded.cognee_node_id and decision.cognee_node_id:
+        try:
+            await cognee_service.add_graph_edges(
+                [(decision.cognee_node_id, superseded.cognee_node_id, ontology.EDGE_SUPERSEDES)]
+            )
+        except Exception:
+            pass  # graph is secondary; the SQLite change already succeeded
+
+    return decision

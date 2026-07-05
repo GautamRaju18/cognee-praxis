@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { createDecision } from "../api";
+import { useEffect, useRef, useState } from "react";
+import { checkProposal, createDecision } from "../api";
 import {
   ErrorNote,
   Eyebrow,
@@ -9,7 +9,8 @@ import {
   inputCls,
   labelCls,
 } from "../components";
-import type { Confidence, DecisionCreate } from "../types";
+import { useNav } from "../nav";
+import type { Confidence, DecisionCreate, ProposalCheck } from "../types";
 
 interface AssumptionDraft {
   statement: string;
@@ -31,9 +32,30 @@ export default function LogDecision({ onLogged }: { onLogged: () => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState("");
+  const [guard, setGuard] = useState<ProposalCheck | null>(null);
+  const nav = useNav();
+  const guardSeq = useRef(0);
 
   const set = (key: keyof typeof form) => (e: { target: { value: string } }) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
+
+  // Live "have we done this before?" check while drafting — reuses check-proposal.
+  useEffect(() => {
+    const probe = `${form.title}. ${form.statement}`.trim();
+    if (form.title.trim().length < 5 || probe.length < 15) {
+      setGuard(null);
+      return;
+    }
+    const seq = ++guardSeq.current;
+    const t = setTimeout(() => {
+      checkProposal(probe, form.topic || undefined)
+        .then((r) => {
+          if (seq === guardSeq.current) setGuard(r.repeats_prior || r.contradicts.length ? r : null);
+        })
+        .catch(() => {});
+    }, 650);
+    return () => clearTimeout(t);
+  }, [form.title, form.statement, form.topic]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -213,6 +235,27 @@ export default function LogDecision({ onLogged }: { onLogged: () => void }) {
             ))}
           </div>
         </div>
+
+        {guard && (
+          <div className="px-fade-up rounded-lg border border-[var(--color-mixed)] bg-[#241d0e]/70 p-3.5">
+            <div className="flex items-center gap-2">
+              <span className="text-[var(--color-mixed)]">⚠</span>
+              <span className="px-mono text-[11px] uppercase tracking-wider text-[var(--color-mixed)]">
+                {guard.repeats_prior ? "seen before" : "conflicts with history"}
+              </span>
+            </div>
+            <p className="mt-1.5 text-sm text-[var(--color-fg-muted)]">{guard.warning}</p>
+            {guard.relevant_history[0] && (
+              <button
+                type="button"
+                onClick={() => nav.openDecision(guard.relevant_history[0].id)}
+                className="px-mono mt-1.5 text-[11px] text-[var(--color-fg-faint)] transition hover:text-[var(--color-signal)]"
+              >
+                see · {guard.relevant_history[0].title} →
+              </button>
+            )}
+          </div>
+        )}
 
         <div className="flex items-center gap-4 pt-2">
           <button className={buttonCls} disabled={busy}>

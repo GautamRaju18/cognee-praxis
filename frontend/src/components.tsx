@@ -1,5 +1,26 @@
-import type { ReactNode } from "react";
-import type { Decision, Outcome, Valence } from "./types";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useNav } from "./nav";
+import type { Decision, Outcome, ReasoningTriple, Valence } from "./types";
+
+/* ── count-up number (micro-interaction) ────────────────── */
+export function CountUp({ value, ms = 750 }: { value: number; ms?: number }) {
+  const [n, setN] = useState(0);
+  const startRef = useRef<number | null>(null);
+  useEffect(() => {
+    let raf = 0;
+    const tick = (t: number) => {
+      if (startRef.current === null) startRef.current = t;
+      const p = Math.min(1, (t - startRef.current) / ms);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setN(Math.round(eased * value));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    startRef.current = null;
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [value, ms]);
+  return <>{n}</>;
+}
 
 /* ── tiny utils ─────────────────────────────────────────── */
 export function daysBetween(from?: string, to?: string): number | null {
@@ -81,7 +102,7 @@ export function Panel({
   return (
     <div
       onClick={onClick}
-      className={`px-panel ${onClick ? "px-panel-hover cursor-pointer" : ""} ${className}`}
+      className={`px-panel ${onClick ? "px-panel-hover cursor-pointer active:scale-[0.995]" : ""} ${className}`}
     >
       {children}
     </div>
@@ -108,14 +129,17 @@ export function DecisionCard({
   decision,
   onOpen,
   compact = false,
+  showGraphLink = true,
 }: {
   decision: Decision;
   onOpen?: () => void;
   compact?: boolean;
+  showGraphLink?: boolean;
 }) {
+  const nav = useNav();
   const disproven = decision.assumptions.filter((a) => a.invalidated_by_outcome_id);
   return (
-    <Panel onClick={onOpen} className="p-4">
+    <Panel onClick={onOpen} className="group/card p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="px-display text-[15px] leading-tight text-[var(--color-fg)]">
@@ -144,7 +168,65 @@ export function DecisionCard({
           ))}
         </div>
       )}
+
+      {showGraphLink && (
+        <div className="mt-3 flex justify-end border-t border-[var(--color-hair)]/60 pt-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              nav.openInGraph(decision.id);
+            }}
+            className="px-mono flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-[var(--color-fg-faint)] opacity-0 transition group-hover/card:opacity-100 hover:text-[var(--color-signal)]"
+          >
+            <span>⬡</span> view in graph
+          </button>
+        </div>
+      )}
     </Panel>
+  );
+}
+
+/* ── graph reasoning (proves the answer came from the graph) ── */
+const REL_COLOR: Record<string, string> = {
+  resulted_in: "var(--color-signal)",
+  invalidated_by: "var(--color-neg)",
+  supersedes: "var(--color-decision)",
+  made_by: "var(--color-person)",
+  concerns: "var(--color-topic)",
+  based_on: "#5aa0a0",
+  justified_by: "#4a8f86",
+};
+
+export function GraphPath({ triples }: { triples: ReasoningTriple[] }) {
+  if (!triples.length) return null;
+  return (
+    <div className="px-panel p-4">
+      <div className="flex items-center gap-2">
+        <Eyebrow>graph path · how praxis reached this</Eyebrow>
+        <span className="px-mono text-[10px] text-[var(--color-fg-faint)]">
+          {triples.length} relationships traversed
+        </span>
+      </div>
+      <div className="mt-3 space-y-1.5">
+        {triples.map((t, i) => {
+          const c = REL_COLOR[t.relation] ?? "var(--color-fg-faint)";
+          return (
+            <div
+              key={i}
+              className="flex items-center gap-2 rounded-md border border-[var(--color-hair)]/70 bg-[var(--color-ink-2)]/60 px-2.5 py-1.5 text-[12px]"
+            >
+              <span className="max-w-[38%] truncate text-[var(--color-fg-muted)]">{t.source}</span>
+              <span className="px-mono flex shrink-0 items-center gap-1 text-[10px]" style={{ color: c }}>
+                <span className="h-px w-3" style={{ background: c }} />
+                {t.relation}
+                <span aria-hidden>→</span>
+              </span>
+              <span className="max-w-[42%] truncate text-[var(--color-fg)]">{t.target}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -184,6 +266,6 @@ export const inputCls =
   "w-full rounded-lg border border-[var(--color-hair)] bg-[var(--color-ink-2)] px-3 py-2 text-sm text-[var(--color-fg)] placeholder-[var(--color-fg-faint)] outline-none transition focus:border-[var(--color-signal-dim)]";
 export const labelCls = "px-eyebrow mb-1 block";
 export const buttonCls =
-  "inline-flex items-center gap-2 rounded-lg bg-[var(--color-signal)] px-4 py-2 text-sm font-semibold text-[#05201b] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40";
+  "inline-flex items-center gap-2 rounded-lg bg-[var(--color-signal)] px-4 py-2 text-sm font-semibold text-[#05201b] transition duration-150 hover:brightness-110 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100";
 export const ghostButtonCls =
-  "inline-flex items-center gap-2 rounded-lg border border-[var(--color-hair-bright)] px-3 py-1.5 text-sm text-[var(--color-fg-muted)] transition hover:border-[var(--color-signal-dim)] hover:text-[var(--color-fg)]";
+  "inline-flex items-center gap-2 rounded-lg border border-[var(--color-hair-bright)] px-3 py-1.5 text-sm text-[var(--color-fg-muted)] transition duration-150 hover:border-[var(--color-signal-dim)] hover:text-[var(--color-fg)] active:scale-[0.97]";

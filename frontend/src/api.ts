@@ -43,6 +43,11 @@ export const getDecision = (id: string) => request<Decision>(`/decisions/${id}`)
 export const createDecision = (payload: DecisionCreate) =>
   request<Decision>("/decisions", json(payload));
 
+export const updateDecision = (
+  id: string,
+  patch: { status?: string; supersedes_id?: string },
+) => request<Decision>(`/decisions/${id}`, { ...json(patch), method: "PATCH" });
+
 export const createOutcome = (payload: {
   decision_id: string;
   description: string;

@@ -1,5 +1,6 @@
+import { Archive, RotateCw, Undo2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { createOutcome, getDecision, listDecisions } from "../api";
+import { createOutcome, getDecision, listDecisions, updateDecision } from "../api";
 import {
   ErrorNote,
   Eyebrow,
@@ -85,7 +86,45 @@ function OutcomeForm({ decision, onSaved }: { decision: Decision; onSaved: () =>
   );
 }
 
-function Drawer({ id, onClose }: { id: string; onClose: () => void }) {
+function LifecycleActions({
+  decision,
+  onDone,
+}: {
+  decision: Decision;
+  onDone: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const change = async (status: string) => {
+    setBusy(true);
+    try {
+      await updateDecision(decision.id, { status });
+      onDone();
+    } finally {
+      setBusy(false);
+    }
+  };
+  const active = decision.status === "decided" || decision.status === "proposed";
+  return (
+    <div className="flex flex-wrap gap-2">
+      {active ? (
+        <>
+          <button className={ghostButtonCls} disabled={busy} onClick={() => change("reversed")}>
+            <Undo2 size={14} /> Reverse
+          </button>
+          <button className={ghostButtonCls} disabled={busy} onClick={() => change("superseded")}>
+            <Archive size={14} /> Mark superseded
+          </button>
+        </>
+      ) : (
+        <button className={ghostButtonCls} disabled={busy} onClick={() => change("decided")}>
+          <RotateCw size={14} /> Reactivate
+        </button>
+      )}
+    </div>
+  );
+}
+
+function Drawer({ id, onClose, onChanged }: { id: string; onClose: () => void; onChanged?: () => void }) {
   const [decision, setDecision] = useState<Decision | null>(null);
   const [error, setError] = useState("");
 
@@ -129,6 +168,14 @@ function Drawer({ id, onClose }: { id: string; onClose: () => void }) {
               <span>·</span>
               <span>{decision.owner || "unassigned"}</span>
             </div>
+
+            <LifecycleActions
+              decision={decision}
+              onDone={() => {
+                load();
+                onChanged?.();
+              }}
+            />
 
             <section>
               <Eyebrow>what was decided</Eyebrow>
@@ -229,6 +276,7 @@ export default function Decisions({
   const [topic, setTopic] = useState("");
   const [status, setStatus] = useState("");
   const [open, setOpen] = useState<string | null>(initialOpen);
+  const [localRefresh, setLocalRefresh] = useState(0);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -239,7 +287,7 @@ export default function Decisions({
         setError(String(e).replace(/^Error:\s*/, ""));
         setDecisions([]);
       });
-  }, [topic, status, refreshKey, open]);
+  }, [topic, status, refreshKey, open, localRefresh]);
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -352,6 +400,7 @@ export default function Decisions({
             setOpen(null);
             onDrawerClosed?.();
           }}
+          onChanged={() => setLocalRefresh((n) => n + 1)}
         />
       )}
     </div>

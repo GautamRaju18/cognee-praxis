@@ -1,23 +1,46 @@
-import { useCallback, useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  BarChart3,
+  Command,
+  FileInput,
+  FlaskConical,
+  History,
+  LayoutDashboard,
+  type LucideIcon,
+  Network,
+  PlusCircle,
+  ShieldQuestion,
+  Sparkles,
+  Table2,
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { getHealth } from "./api";
+import CommandPalette from "./CommandPalette";
+import { NavContext } from "./nav";
 import Ask from "./pages/Ask";
+import Assumptions from "./pages/Assumptions";
 import Brain from "./pages/Brain";
 import CheckProposal from "./pages/CheckProposal";
 import Dashboard from "./pages/Dashboard";
 import Decisions from "./pages/Decisions";
 import Ingest from "./pages/Ingest";
+import Insights from "./pages/Insights";
 import LogDecision from "./pages/LogDecision";
+import Timeline from "./pages/Timeline";
 import type { Health } from "./types";
 
-const PAGES = [
-  { key: "dashboard", label: "Overview", glyph: "◈" },
-  { key: "ask", label: "Ask Praxis", glyph: "▹" },
-  { key: "brain", label: "Company Brain", glyph: "⬡" },
-  { key: "decisions", label: "Decisions", glyph: "▤" },
-  { key: "check", label: "Check Proposal", glyph: "⊘" },
-  { key: "log", label: "Log Decision", glyph: "＋" },
-  { key: "ingest", label: "Ingest", glyph: "⇥" },
-] as const;
+const PAGES: { key: string; label: string; icon: LucideIcon }[] = [
+  { key: "dashboard", label: "Overview", icon: LayoutDashboard },
+  { key: "ask", label: "Ask Praxis", icon: Sparkles },
+  { key: "brain", label: "Company Brain", icon: Network },
+  { key: "insights", label: "Insights", icon: BarChart3 },
+  { key: "timeline", label: "Timeline", icon: History },
+  { key: "decisions", label: "Decisions", icon: Table2 },
+  { key: "assumptions", label: "Assumptions", icon: FlaskConical },
+  { key: "check", label: "Check Proposal", icon: ShieldQuestion },
+  { key: "log", label: "Log Decision", icon: PlusCircle },
+  { key: "ingest", label: "Ingest", icon: FileInput },
+];
 
 type PageKey = (typeof PAGES)[number]["key"];
 
@@ -26,6 +49,8 @@ export default function App() {
   const [health, setHealth] = useState<Health | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [openDecisionId, setOpenDecisionId] = useState<string | null>(null);
+  const [graphFocusId, setGraphFocusId] = useState<string | null>(null);
+  const [checked, setChecked] = useState(false);
   const bump = () => setRefreshKey((k) => k + 1);
 
   const openDecision = useCallback((id: string) => {
@@ -33,15 +58,34 @@ export default function App() {
     setPage("decisions");
   }, []);
 
+  const openInGraph = useCallback((decisionId: string) => {
+    setGraphFocusId(decisionId);
+    setPage("brain");
+  }, []);
+
   const go = useCallback((key: PageKey) => {
     setPage(key);
     if (key !== "decisions") setOpenDecisionId(null);
+    if (key !== "brain") setGraphFocusId(null);
   }, []);
 
+  const nav = useMemo(
+    () => ({ openDecision, openInGraph, goToPage: (k: string) => go(k as PageKey) }),
+    [openDecision, openInGraph, go],
+  );
+
   useEffect(() => {
-    getHealth()
-      .then(setHealth)
-      .catch(() => setHealth(null));
+    let alive = true;
+    const check = () =>
+      getHealth()
+        .then((h) => alive && (setHealth(h), setChecked(true)))
+        .catch(() => alive && (setHealth(null), setChecked(true)));
+    check();
+    const id = setInterval(check, 8000);
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
   }, []);
 
   // keyboard nav: 1..7 jump between pages
@@ -60,6 +104,8 @@ export default function App() {
   const online = health?.status === "ok";
 
   return (
+    <NavContext.Provider value={nav}>
+    <CommandPalette />
     <div className="relative flex h-full">
       <div className="px-app-bg" />
 
@@ -82,17 +128,23 @@ export default function App() {
               <button
                 key={p.key}
                 onClick={() => go(p.key)}
-                className={`group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition ${
+                aria-label={p.label}
+                aria-current={active ? "page" : undefined}
+                className={`group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition active:scale-[0.98] ${
                   active
                     ? "bg-[var(--color-panel-2)] text-[var(--color-fg)]"
                     : "text-[var(--color-fg-muted)] hover:bg-[var(--color-panel)] hover:text-[var(--color-fg)]"
                 }`}
               >
-                <span
-                  className={`text-base leading-none ${active ? "text-[var(--color-signal)]" : "text-[var(--color-fg-faint)] group-hover:text-[var(--color-fg-muted)]"}`}
-                >
-                  {p.glyph}
-                </span>
+                <p.icon
+                  size={17}
+                  strokeWidth={active ? 2.3 : 1.8}
+                  className={
+                    active
+                      ? "text-[var(--color-signal)]"
+                      : "text-[var(--color-fg-faint)] group-hover:text-[var(--color-fg-muted)]"
+                  }
+                />
                 <span className="flex-1">{p.label}</span>
                 <span className="px-mono text-[10px] text-[var(--color-fg-faint)] opacity-0 transition group-hover:opacity-100">
                   {i + 1}
@@ -130,34 +182,66 @@ export default function App() {
             </span>
           </div>
           <div className="px-mono flex items-center gap-4 text-[10px] text-[var(--color-fg-faint)]">
+            <button
+              onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
+              aria-label="Open command palette"
+              className="flex items-center gap-1 rounded border border-[var(--color-hair)] px-1.5 py-0.5 transition active:scale-95 hover:border-[var(--color-signal-dim)] hover:text-[var(--color-signal)]"
+            >
+              <Command size={11} strokeWidth={2} />K
+            </button>
             <span>dataset · praxis</span>
             <span>cognee {health?.cognee_version ?? "—"}</span>
           </div>
         </header>
 
+        {checked && !online && (
+          <div className="flex items-center gap-2 border-b border-[#7a2c37] bg-[#2a1015] px-6 py-2 text-sm text-[var(--color-neg)]">
+            <span className="px-live-dot h-2 w-2 rounded-full bg-[var(--color-neg)]" />
+            <span className="px-mono text-[11px] uppercase tracking-wider">backend unreachable</span>
+            <span className="text-[var(--color-fg-muted)]">
+              — the API isn’t responding. Retrying every few seconds.
+            </span>
+          </div>
+        )}
+
         {page === "brain" ? (
           <main key={page} className="px-fade-up relative min-h-0 flex-1 overflow-hidden">
-            <Brain onOpenDecision={openDecision} />
+            <Brain onOpenDecision={openDecision} focusDecisionId={graphFocusId} />
           </main>
         ) : (
-          <main key={page} className="px-fade-up min-h-0 flex-1 overflow-y-auto">
-            <div className="mx-auto max-w-6xl px-6 py-7">
-              {page === "dashboard" && <Dashboard onNavigate={go} onOpenDecision={openDecision} />}
-              {page === "ask" && <Ask />}
-              {page === "decisions" && (
-                <Decisions
-                  refreshKey={refreshKey}
-                  initialOpen={openDecisionId}
-                  onDrawerClosed={() => setOpenDecisionId(null)}
-                />
-              )}
-              {page === "check" && <CheckProposal />}
-              {page === "log" && <LogDecision onLogged={bump} />}
-              {page === "ingest" && <Ingest onIngested={bump} />}
-            </div>
+          <main className="min-h-0 flex-1 overflow-y-auto">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={page}
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.3, ease: [0.2, 0.7, 0.2, 1] }}
+                className="mx-auto max-w-6xl px-6 py-7"
+              >
+                {page === "dashboard" && (
+                  <Dashboard onNavigate={(k) => go(k as PageKey)} onOpenDecision={openDecision} />
+                )}
+                {page === "ask" && <Ask />}
+                {page === "insights" && <Insights onOpenDecision={openDecision} />}
+                {page === "timeline" && <Timeline />}
+                {page === "decisions" && (
+                  <Decisions
+                    refreshKey={refreshKey}
+                    initialOpen={openDecisionId}
+                    onDrawerClosed={() => setOpenDecisionId(null)}
+                  />
+                )}
+                {page === "assumptions" && <Assumptions />}
+                {page === "check" && <CheckProposal />}
+                {page === "log" && <LogDecision onLogged={bump} />}
+                {page === "ingest" && <Ingest onIngested={bump} />}
+              </motion.div>
+            </AnimatePresence>
           </main>
         )}
       </div>
     </div>
+    </NavContext.Provider>
   );
 }

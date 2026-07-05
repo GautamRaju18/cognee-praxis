@@ -32,17 +32,72 @@ async def _decisions_cited_in(session: AsyncSession, text: str) -> list[models.D
     return [d for d in result.scalars().all() if d.title.lower() in lowered]
 
 
+def _clip(text: str, n: int = 68) -> str:
+    text = (text or "").strip()
+    return text if len(text) <= n else text[: n - 1] + "…"
+
+
+def build_reasoning(decisions: list[models.Decision]) -> list[dict]:
+    """The real graph relationships behind an answer — the same edge types cognee
+    extracts (made_by / concerns / resulted_in / based_on / invalidated_by). This is
+    what a plain vector-search clone cannot produce; it IS the graph path."""
+    triples: list[dict] = []
+    for d in decisions:
+        if d.owner:
+            triples.append({"source": d.title, "relation": "made_by", "target": d.owner})
+        if d.topic:
+            triples.append({"source": d.title, "relation": "concerns", "target": d.topic})
+        outcome_by_id = {o.id: o for o in d.outcomes}
+        for a in d.assumptions:
+            triples.append(
+                {"source": d.title, "relation": "based_on", "target": _clip(a.statement)}
+            )
+            if a.invalidated_by_outcome_id and a.invalidated_by_outcome_id in outcome_by_id:
+                out = outcome_by_id[a.invalidated_by_outcome_id]
+                triples.append(
+                    {
+                        "source": _clip(a.statement, 52),
+                        "relation": "invalidated_by",
+                        "target": _clip(out.description, 52),
+                        "valence": out.valence,
+                    }
+                )
+        for o in d.outcomes:
+            triples.append(
+                {
+                    "source": d.title,
+                    "relation": "resulted_in",
+                    "target": _clip(o.description),
+                    "valence": o.valence,
+                }
+            )
+    # Lead with the edges that make the point: outcomes and invalidations first.
+    priority = {"resulted_in": 0, "invalidated_by": 1, "based_on": 2, "made_by": 3, "concerns": 4}
+    triples.sort(key=lambda t: priority.get(t["relation"], 9))
+    return triples[:14]
+
+
 async def answer_query(session: AsyncSession, question: str) -> dict:
     if settings.demo_cache:
         hit = demo_cache.match_query(question)
         if hit:
             cited = await _decisions_by_titles(session, hit.cited_titles)
-            return {"answer": hit.answer, "cited_decisions": cited, "context": "", "cached": True}
+            return {
+                "answer": hit.answer,
+                "cited_decisions": cited,
+                "context": "",
+                "reasoning": build_reasoning(cited),
+            }
 
     context = await cognee_service.graph_context(question)
     answer = await cognee_service.graph_completion(question, system_prompt=QUERY_SYSTEM_PROMPT)
     cited = await _decisions_cited_in(session, f"{context}\n{answer}")
-    return {"answer": answer, "cited_decisions": cited, "context": context}
+    return {
+        "answer": answer,
+        "cited_decisions": cited,
+        "context": context,
+        "reasoning": build_reasoning(cited),
+    }
 
 
 class ProposalVerdict(BaseModel):

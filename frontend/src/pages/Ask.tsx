@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { query } from "../api";
-import { DecisionCard, Eyebrow, ErrorNote, Panel, buttonCls } from "../components";
+import { DecisionCard, Eyebrow, ErrorNote, GraphPath, Panel, buttonCls } from "../components";
 import type { QueryResult } from "../types";
 
 const SUGGESTIONS = [
@@ -153,6 +153,8 @@ export default function Ask() {
                 )}
               </p>
             </Panel>
+
+            {result.reasoning.length > 0 && <GraphPath triples={result.reasoning} />}
 
             {result.cited_decisions.length > 0 && (
               <div>

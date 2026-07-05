@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from praxis.db import get_session
-from praxis.schemas import DecisionOut, ProposalCheckOut, QueryOut
+from praxis.schemas import DecisionOut, ProposalCheckOut, QueryOut, ReasoningTriple
 from praxis.services import query_service
 
 router = APIRouter(tags=["query"])
@@ -18,6 +18,7 @@ async def query(
         answer=result["answer"],
         cited_decisions=[DecisionOut.model_validate(d) for d in result["cited_decisions"]],
         context=result["context"],
+        reasoning=[ReasoningTriple(**t) for t in result.get("reasoning", [])],
     )
 
 
