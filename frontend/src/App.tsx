@@ -29,6 +29,7 @@ import Insights from "./pages/Insights";
 import LogDecision from "./pages/LogDecision";
 import People from "./pages/People";
 import Timeline from "./pages/Timeline";
+import Splash from "./Splash";
 import type { Health } from "./types";
 
 const PAGES: { key: string; label: string; icon: LucideIcon }[] = [
@@ -108,6 +109,7 @@ export default function App() {
 
   return (
     <NavContext.Provider value={nav}>
+    <Splash />
     <CommandPalette />
     <div className="relative flex h-full">
       <div className="px-app-bg" />

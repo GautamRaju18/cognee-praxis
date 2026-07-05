@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+import { Download, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ForceGraph3D from "react-force-graph-3d";
 import * as THREE from "three";
@@ -408,6 +408,27 @@ export default function Brain({
     fgRef.current?.zoomToFit(700, 60);
   };
 
+  // Snapshot the live graph to PNG — great for slides/thumbnails. We render the
+  // post-processing composer (so the bloom glow is captured) and read the buffer
+  // synchronously, before the browser composites and clears the WebGL drawing buffer.
+  const capture = useCallback(() => {
+    const fg = fgRef.current;
+    if (!fg) return;
+    try {
+      const renderer = fg.renderer();
+      const composer = fg.postProcessingComposer?.();
+      if (composer) composer.render();
+      else renderer.render(fg.scene(), fg.camera());
+      const url = renderer.domElement.toDataURL("image/png");
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `praxis-company-brain-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.png`;
+      a.click();
+    } catch {
+      /* no WebGL / headless — capture unavailable */
+    }
+  }, []);
+
   const types = Object.keys(TYPE_COLOR);
 
   return (
@@ -477,6 +498,14 @@ export default function Brain({
           placeholder="search nodes…"
           className="px-mono w-44 rounded-lg border border-[var(--color-hair)] bg-[var(--color-ink-2)]/80 px-3 py-1.5 text-xs text-[var(--color-fg)] placeholder-[var(--color-fg-faint)] outline-none backdrop-blur focus:border-[var(--color-signal-dim)]"
         />
+        <button
+          className={`${ghostButtonCls} flex items-center gap-1.5`}
+          onClick={capture}
+          title="Download this view as a PNG"
+        >
+          <Download size={12} strokeWidth={2} />
+          capture
+        </button>
         <button className={ghostButtonCls} onClick={resetView}>
           reset
         </button>
@@ -504,6 +533,14 @@ export default function Brain({
             </button>
           );
         })}
+        {/* non-interactive key: the pulsing red nodes */}
+        <span className="px-mono flex items-center gap-1.5 rounded-md border border-[var(--color-hair)] bg-[var(--color-ink)]/60 px-2 py-1 text-[10px] uppercase tracking-wider text-[var(--color-fg-muted)] backdrop-blur">
+          <span
+            className="px-live-dot h-2 w-2 rounded-full"
+            style={{ background: DISPROVEN }}
+          />
+          disproven
+        </span>
       </div>
 
       {/* Bottom-right: legend for the meaningful edges */}

@@ -9,6 +9,16 @@ const SUGGESTIONS = [
   "Which of our past assumptions were proven wrong?",
 ];
 
+// Every follow-up hits the curated cache (churn/pricing/assumption/referral/infra
+// keywords) so the conversation stays instant and deterministic on camera.
+const FOLLOWUPS = [
+  "What did we try before on churn, and what actually happened?",
+  "What have we decided about pricing, and why?",
+  "Which of our past assumptions were proven wrong?",
+  "What happened with our referral program?",
+  "What have we decided about infrastructure?",
+];
+
 const STEPS = ["Embedding the question", "Traversing the decision graph", "Composing the answer"];
 
 function useTypewriter(text: string, active: boolean) {
@@ -70,6 +80,7 @@ export default function Ask() {
   const [error, setError] = useState("");
   const [result, setResult] = useState<QueryResult | null>(null);
   const [typing, setTyping] = useState(false);
+  const [asked, setAsked] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   const answer = useTypewriter(result?.answer ?? "", typing);
@@ -82,6 +93,7 @@ export default function Ask() {
     try {
       const r = await query(text);
       setResult(r);
+      setAsked(text);
       setTyping(true);
     } catch (e) {
       setError(String(e).replace(/^Error:\s*/, ""));
@@ -166,6 +178,31 @@ export default function Ask() {
                   {result.cited_decisions.map((d) => (
                     <DecisionCard key={d.id} decision={d} />
                   ))}
+                </div>
+              </div>
+            )}
+
+            {answer.length >= (result.answer?.length ?? 0) && (
+              <div className="px-fade-up border-t border-[var(--color-hair)] pt-5">
+                <Eyebrow>keep pulling the thread</Eyebrow>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {FOLLOWUPS.filter((f) => f !== asked)
+                    .slice(0, 3)
+                    .map((s) => (
+                      <button
+                        key={s}
+                        className="px-mono group flex items-center gap-1.5 rounded-full border border-[var(--color-hair)] px-3 py-1.5 text-[11px] text-[var(--color-fg-muted)] transition hover:border-[var(--color-signal-dim)] hover:text-[var(--color-fg)]"
+                        onClick={() => {
+                          setQ(s);
+                          run(s);
+                        }}
+                      >
+                        <span className="text-[var(--color-signal)] transition group-hover:translate-x-0.5">
+                          ↳
+                        </span>
+                        {s}
+                      </button>
+                    ))}
                 </div>
               </div>
             )}
