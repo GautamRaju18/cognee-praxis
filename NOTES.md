@@ -269,3 +269,18 @@ finds nothing → ~0 yield on the local model. **Ingest needs Gemini** (phase-6 
 passed there). On Ollama, `/ingest` is now safe (bounded 504) but low-yield; the
 other endpoints (`/query`, `/check-proposal`, register, graph) are the usable local
 demo surface.
+
+## Post-build — live graph growth + fully-local embeddings (2026-07-05)
+
+- **Logging a decision now pushes it to the graph deterministically** (embeddings
+  only, no LLM): `decision_service.create_decision` builds an `ontology.Decision`
+  DataPoint and `push_data_points([...])` instead of the old add+cognify. A new
+  decision appears in the Company Brain immediately (verified: 138→141 nodes with
+  made_by/participant/concerns/justified_by/based_on edges), reliable even when the
+  LLM is slow/offline. UI: "watch it appear in the brain →" deep-link after logging.
+- **Embeddings moved to local Ollama nomic** (Gemini's 1000/day embed quota was
+  exhausted by repeated reseeds). cognee's OllamaEmbeddingEngine needs a HF
+  tokenizer for token counting → requires `pip install transformers` and
+  `HUGGINGFACE_TOKENIZER="bert-base-uncased"` in .env. EMBEDDING_DIMENSIONS=768.
+  The stack is now fully local (llama3.2 + nomic-embed-text) — zero external quota.
+  A reset+reseed is required when switching embedding models (vector dims differ).

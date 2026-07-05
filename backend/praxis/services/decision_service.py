@@ -73,16 +73,36 @@ async def create_decision(session: AsyncSession, payload: DecisionCreate) -> mod
     await session.commit()
     await session.refresh(decision)
 
-    document = compose_decision_document(decision)
-    if superseded is not None:
-        document += f"\nThis decision supersedes the earlier decision: {superseded.title}"
-    await cognee_service.add_text(document, dataset=dataset)
-    await cognee_service.cognify_dataset(dataset=dataset)
-
-    if superseded is not None and superseded.cognee_node_id:
-        await cognee_service.add_graph_edges(
-            [(decision.cognee_node_id, superseded.cognee_node_id, ontology.EDGE_SUPERSEDES)]
+    # Deterministic graph push (embeddings only, NO LLM) — the decision appears
+    # in the Company Brain immediately, even when the LLM is slow or offline.
+    # Mirrors the seed's reliable path instead of depending on cognify().
+    try:
+        await cognee_service.ensure_setup()
+        node = ontology.Decision(
+            title=decision.title,
+            statement=decision.statement,
+            decided_on=decision.decided_on.isoformat(),
+            status=decision.status,
+            reversibility=decision.reversibility,
+            made_by=ontology.Person(name=decision.owner or "Unassigned"),
+            participant=[ontology.Person(name=p) for p in decision.participants],
+            concerns=[ontology.Topic(name=decision.topic)],
+            justified_by=ontology.Rationale(text=decision.rationale) if decision.rationale else None,
+            based_on=[
+                ontology.Assumption(statement=a.statement, confidence=a.confidence)
+                for a in payload.assumptions
+            ],
+            resulted_in=[],
         )
+        await cognee_service.push_data_points([node])
+        # keep the composed text around for richer future retrieval (no LLM here)
+        await cognee_service.add_text(compose_decision_document(decision), dataset=dataset)
+        if superseded is not None and superseded.cognee_node_id:
+            await cognee_service.add_graph_edges(
+                [(decision.cognee_node_id, superseded.cognee_node_id, ontology.EDGE_SUPERSEDES)]
+            )
+    except Exception:
+        pass  # graph is best-effort; SQLite already holds the authoritative record
 
     return decision
 

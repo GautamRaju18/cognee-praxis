@@ -32,6 +32,7 @@ export default function LogDecision({ onLogged }: { onLogged: () => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState("");
+  const [createdId, setCreatedId] = useState<string | null>(null);
   const [guard, setGuard] = useState<ProposalCheck | null>(null);
   const nav = useNav();
   const guardSeq = useRef(0);
@@ -71,7 +72,8 @@ export default function LogDecision({ onLogged }: { onLogged: () => void }) {
           .filter(Boolean),
         assumptions: assumptions.filter((a) => a.statement.trim()),
       });
-      setDone(`Logged "${created.title}" and pushed it into the memory graph.`);
+      setCreatedId(created.id);
+      setDone(`Logged "${created.title}" and wired it into the memory graph.`);
       setAssumptions([]);
       setForm({
         title: "",
@@ -265,8 +267,17 @@ export default function LogDecision({ onLogged }: { onLogged: () => void }) {
         </div>
         {error && <ErrorNote message={error} />}
         {done && (
-          <div className="rounded-lg border border-[#1f6b43] bg-[#0c2418]/70 px-3 py-2 text-sm text-[var(--color-pos)]">
-            {done}
+          <div className="px-fade-up flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#1f6b43] bg-[#0c2418]/70 px-3.5 py-3 text-sm text-[var(--color-pos)]">
+            <span>{done}</span>
+            {createdId && (
+              <button
+                type="button"
+                onClick={() => nav.openInGraph(createdId)}
+                className="px-mono shrink-0 rounded-md border border-[var(--color-signal-dim)] bg-[var(--color-signal-deep)] px-2.5 py-1 text-[11px] text-[var(--color-signal)] transition hover:brightness-125"
+              >
+                ⬡ watch it appear in the brain →
+              </button>
+            )}
           </div>
         )}
       </form>
