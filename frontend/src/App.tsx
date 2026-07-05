@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   BarChart3,
   Command,
@@ -12,6 +12,7 @@ import {
   ShieldQuestion,
   Sparkles,
   Table2,
+  Users,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getHealth } from "./api";
@@ -26,6 +27,7 @@ import Decisions from "./pages/Decisions";
 import Ingest from "./pages/Ingest";
 import Insights from "./pages/Insights";
 import LogDecision from "./pages/LogDecision";
+import People from "./pages/People";
 import Timeline from "./pages/Timeline";
 import type { Health } from "./types";
 
@@ -36,6 +38,7 @@ const PAGES: { key: string; label: string; icon: LucideIcon }[] = [
   { key: "insights", label: "Insights", icon: BarChart3 },
   { key: "timeline", label: "Timeline", icon: History },
   { key: "decisions", label: "Decisions", icon: Table2 },
+  { key: "people", label: "Decision-makers", icon: Users },
   { key: "assumptions", label: "Assumptions", icon: FlaskConical },
   { key: "check", label: "Check Proposal", icon: ShieldQuestion },
   { key: "log", label: "Log Decision", icon: PlusCircle },
@@ -210,12 +213,12 @@ export default function App() {
           </main>
         ) : (
           <main className="min-h-0 flex-1 overflow-y-auto">
-            <AnimatePresence mode="wait">
-              <motion.div
+            {/* keyed enter animation (no AnimatePresence exit — it deadlocks with
+                the vanilla-tilt transforms and can freeze navigation) */}
+            <motion.div
                 key={page}
                 initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.3, ease: [0.2, 0.7, 0.2, 1] }}
                 className="mx-auto max-w-6xl px-6 py-7"
               >
@@ -232,12 +235,12 @@ export default function App() {
                     onDrawerClosed={() => setOpenDecisionId(null)}
                   />
                 )}
+                {page === "people" && <People />}
                 {page === "assumptions" && <Assumptions />}
                 {page === "check" && <CheckProposal />}
                 {page === "log" && <LogDecision onLogged={bump} />}
                 {page === "ingest" && <Ingest onIngested={bump} />}
               </motion.div>
-            </AnimatePresence>
           </main>
         )}
       </div>
