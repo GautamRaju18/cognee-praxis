@@ -1,7 +1,23 @@
 """Praxis API entrypoint."""
 
+import mimetypes
 import os
 from contextlib import asynccontextmanager
+
+# Slim Python images (e.g. python:3.12-slim) ship without /etc/mime.types, and
+# Python < 3.13 leans on that file — so StaticFiles guesses text/plain for .css
+# and browsers refuse to apply the stylesheet (page renders unstyled). Register
+# the web types explicitly so serving is correct on any base image / Python.
+for _ext, _type in (
+    (".css", "text/css"),
+    (".js", "text/javascript"),
+    (".mjs", "text/javascript"),
+    (".json", "application/json"),
+    (".svg", "image/svg+xml"),
+    (".woff2", "font/woff2"),
+    (".woff", "font/woff"),
+):
+    mimetypes.add_type(_type, _ext)
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

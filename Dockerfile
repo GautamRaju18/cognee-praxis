@@ -21,7 +21,7 @@ ENV PYTHONUNBUFFERED=1 \
 WORKDIR /app
 
 RUN apt-get update \
- && apt-get install -y --no-install-recommends libgomp1 \
+ && apt-get install -y --no-install-recommends libgomp1 media-types \
  && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt ./
