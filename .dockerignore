@@ -1,0 +1,18 @@
+# Keep the build context lean and secrets out of the image.
+.env
+.git
+.venv
+**/node_modules
+frontend/dist
+__pycache__
+**/__pycache__
+*.pyc
+backend/tests
+.cognee_system
+.data_storage
+praxis.db
+NOTES.md
+DEMO.md
+SUBMISSION.md
+scratchpad
+*.log

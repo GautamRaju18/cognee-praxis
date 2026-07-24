@@ -1,0 +1,13 @@
+DECISION RECORD
+
+Title: Launch a free tier with 10k monthly API calls
+Statement: Offer a perpetual free tier capped at 10,000 API calls per month.
+Status: superseded
+Reversibility: two_way
+Decided on: 2024-05-15
+Decision made by: Marcus Lee
+Participants: Dana Kim
+Topic: pricing
+Rationale: A generous free tier seeds bottom-up developer adoption.
+Assumptions this decision is based on:
+- (confidence: low) The free tier converts to paid above 3%

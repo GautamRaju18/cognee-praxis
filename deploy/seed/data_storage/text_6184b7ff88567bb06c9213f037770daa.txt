@@ -1,0 +1,8 @@
+OUTCOME RECORD
+
+For decision: Move enterprise support to Slack Connect
+Outcome: Slack support did not scale: response-time SLAs slipped as accounts grew and CS burned out; the team moved back to a ticketed model.
+Valence: negative
+Observed on: 2025-02-20
+Evidence source: CS retro, Feb 2025
+Topic: churn

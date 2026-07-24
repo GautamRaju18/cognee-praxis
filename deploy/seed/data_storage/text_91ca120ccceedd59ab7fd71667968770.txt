@@ -1,0 +1,8 @@
+OUTCOME RECORD
+
+For decision: Add cancellation save-offers flow
+Outcome: Save offers only delayed cancellations by about one month; six-month churn was unchanged and discounted accounts churned at the same rate.
+Valence: negative
+Observed on: 2025-08-12
+Evidence source: Retention analysis, August 2025
+Topic: churn

@@ -1,0 +1,8 @@
+OUTCOME RECORD
+
+For decision: Adopt a feature-flag and experiment platform
+Outcome: Deploys went from weekly to daily with a lower change-failure rate.
+Valence: positive
+Observed on: 2025-06-30
+Evidence source: Engineering metrics review, June 2025
+Topic: product

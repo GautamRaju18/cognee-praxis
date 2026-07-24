@@ -1,0 +1,14 @@
+DECISION RECORD
+
+Title: Migrate primary database to managed Postgres
+Statement: Move the primary database from self-hosted Postgres to a managed service.
+Status: decided
+Reversibility: one_way
+Decided on: 2025-04-02
+Decision made by: Priya Sharma
+Participants: Raj Patel
+Topic: infra
+Rationale: The team spends ~20% of its time on database maintenance and on-call toil.
+Assumptions this decision is based on:
+- (confidence: high) Managed-service latency overhead stays under 5ms
+- (confidence: low) Migration downtime can be kept under one hour

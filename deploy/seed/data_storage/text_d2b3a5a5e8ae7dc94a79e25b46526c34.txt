@@ -1,0 +1,13 @@
+DECISION RECORD
+
+Title: Launch usage alerts to prevent bill shock
+Statement: Notify accounts at 80% and 100% of expected usage before overage billing.
+Status: decided
+Reversibility: two_way
+Decided on: 2025-09-30
+Decision made by: Marcus Lee
+Participants: Elena Petrova
+Topic: product
+Rationale: Surprise bills are a top churn and support driver.
+Assumptions this decision is based on:
+- (confidence: med) Proactive alerts cut billing-related churn

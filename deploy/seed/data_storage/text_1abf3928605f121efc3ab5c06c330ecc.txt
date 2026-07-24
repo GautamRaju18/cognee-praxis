@@ -1,0 +1,12 @@
+DECISION RECORD
+
+Title: Monthly-first pricing strategy
+Statement: Price all plans monthly by default with no annual commitment.
+Status: superseded
+Reversibility: two_way
+Decided on: 2024-03-05
+Decision made by: Dana Kim
+Topic: pricing
+Rationale: Low-friction signup mattered most while finding product-market fit.
+Assumptions this decision is based on:
+- (confidence: med) Buyers churn less when they feel no lock-in

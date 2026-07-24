@@ -1,0 +1,8 @@
+OUTCOME RECORD
+
+For decision: Adopt a sales-assist motion for 50+ seat deals
+Outcome: Win rate on 50+ seat deals rose from 19% to 31% in the first two quarters of sales-assist.
+Valence: positive
+Observed on: 2025-11-10
+Evidence source: RevOps review, Nov 2025
+Topic: growth

@@ -1,0 +1,8 @@
+OUTCOME RECORD
+
+For decision: Ship a company design system
+Outcome: Feature UI work sped up noticeably and design-QA bugs fell by half after adoption.
+Valence: positive
+Observed on: 2025-08-05
+Evidence source: Product engineering review, Aug 2025
+Topic: product

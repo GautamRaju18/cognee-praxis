@@ -1,0 +1,15 @@
+# Runtime deps for the containerized (Render) deploy. Graph-store packages are
+# pinned to the versions the baked .cognee_system was written with, so the
+# pre-seeded company memory reads identically in the Linux container.
+cognee==1.2.2
+ladybug==0.17.1
+lancedb==0.33.0
+pylance==0.36.0
+networkx==3.6.1
+numpy==2.5.0
+
+fastapi
+uvicorn[standard]
+sqlalchemy
+aiosqlite
+python-dotenv

@@ -1,0 +1,8 @@
+OUTCOME RECORD
+
+For decision: Stand up a Snowflake and dbt data warehouse
+Outcome: Company metrics consolidated into one warehouse; the weekly metrics review went from days of prep to minutes.
+Valence: positive
+Observed on: 2025-09-12
+Evidence source: Data team review, Sep 2025
+Topic: data

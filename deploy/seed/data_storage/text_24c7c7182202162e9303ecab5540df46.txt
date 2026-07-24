@@ -1,0 +1,13 @@
+DECISION RECORD
+
+Title: Replace the free tier with a 14-day trial
+Statement: Sunset the perpetual free tier in favor of a 14-day full-feature trial.
+Status: proposed
+Reversibility: two_way
+Decided on: 2025-12-05
+Decision made by: Marcus Lee
+Participants: Dana Kim
+Topic: pricing
+Rationale: The free tier's paid conversion stayed near 1.5% while carrying real infra cost.
+Assumptions this decision is based on:
+- (confidence: med) A time-boxed trial converts better than a perpetual free tier

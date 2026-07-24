@@ -1,0 +1,13 @@
+DECISION RECORD
+
+Title: Adopt a product-led growth motion
+Statement: Default to self-serve signup and in-product upgrades; sales only assists large deals.
+Status: decided
+Reversibility: two_way
+Decided on: 2024-01-20
+Decision made by: Dana Kim
+Participants: Leena Ahuja
+Topic: growth
+Rationale: Developers want to try before they talk to sales.
+Assumptions this decision is based on:
+- (confidence: med) Self-serve signups convert to paid without a sales touch

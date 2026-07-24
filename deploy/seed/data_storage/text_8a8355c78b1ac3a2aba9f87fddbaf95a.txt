@@ -1,0 +1,13 @@
+DECISION RECORD
+
+Title: Move analytics to a real-time event pipeline
+Statement: Replace nightly batch analytics with a streaming pipeline.
+Status: decided
+Reversibility: one_way
+Decided on: 2025-07-22
+Decision made by: Grace Okafor
+Participants: Raj Patel
+Topic: data
+Rationale: Product teams need same-day funnel data.
+Assumptions this decision is based on:
+- (confidence: low) Streaming infra cost stays within the data budget

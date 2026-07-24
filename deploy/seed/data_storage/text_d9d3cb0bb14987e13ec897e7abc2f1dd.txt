@@ -1,0 +1,12 @@
+DECISION RECORD
+
+Title: Add cancellation save-offers flow
+Statement: Show a 30% discount offer to customers who click cancel.
+Status: decided
+Reversibility: two_way
+Decided on: 2025-02-03
+Decision made by: Sara Novak
+Topic: churn
+Rationale: Cheaper to discount than to lose the account entirely.
+Assumptions this decision is based on:
+- (confidence: med) Discounts address the real reason customers cancel

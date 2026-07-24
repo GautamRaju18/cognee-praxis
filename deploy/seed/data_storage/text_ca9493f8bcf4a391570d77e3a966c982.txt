@@ -1,0 +1,8 @@
+OUTCOME RECORD
+
+For decision: Launch customer referral program
+Outcome: The referral program was shut down after six weeks in Q2 because coordinated fraud rings claimed over 80% of referral rewards using fake accounts.
+Valence: negative
+Observed on: 2025-05-26
+Evidence source: Growth weekly report, week 21
+Topic: growth

@@ -1,0 +1,13 @@
+DECISION RECORD
+
+Title: Launch customer referral program
+Statement: Pay existing users $30 for each successfully invited new customer.
+Status: reversed
+Reversibility: two_way
+Decided on: 2025-04-07
+Decision made by: Ana Lima
+Participants: Tom Baker
+Topic: growth
+Rationale: Paid acquisition costs were rising; referrals should lower CAC.
+Assumptions this decision is based on:
+- (confidence: high) Referral rewards will attract genuine customers rather than fraudsters

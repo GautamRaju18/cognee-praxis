@@ -1,0 +1,13 @@
+DECISION RECORD
+
+Title: Test paid acquisition on Google and LinkedIn
+Statement: Run a one-quarter paid-ads test with a $60k budget across Google and LinkedIn.
+Status: decided
+Reversibility: two_way
+Decided on: 2025-05-28
+Decision made by: Ana Lima
+Participants: Tom Baker
+Topic: marketing
+Rationale: Content-driven growth is slow; paid might accelerate pipeline.
+Assumptions this decision is based on:
+- (confidence: med) Paid CAC will beat our content-driven CAC

@@ -1,0 +1,8 @@
+OUTCOME RECORD
+
+For decision: Build in-house authentication
+Outcome: In-house auth consumed roughly a third of infra time and caused two security near-misses; total cost exceeded a vendor's.
+Valence: negative
+Observed on: 2024-10-20
+Evidence source: Security review, Oct 2024
+Topic: security

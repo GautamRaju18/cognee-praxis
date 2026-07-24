@@ -49,5 +49,19 @@ class Settings:
     # PRAXIS_DEMO_CACHE=false to force every query through the live LLM.
     demo_cache: bool = os.getenv("PRAXIS_DEMO_CACHE", "true").lower() not in ("0", "false", "no")
 
+    # Cache-only mode: never call the LLM/embedding provider (used for the public
+    # cloud deploy, which has no local Ollama). Cached queries answer instantly;
+    # everything else falls back to keyword-grounded SQLite results — so the app is
+    # fully functional with ZERO external API keys. Set PRAXIS_DEMO_CACHE_ONLY=true.
+    demo_cache_only: bool = os.getenv("PRAXIS_DEMO_CACHE_ONLY", "false").lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+
+    # Directory of built frontend assets to serve (single-container deploy). When
+    # set and present, FastAPI serves the SPA at "/". Unset in local dev (Vite serves it).
+    frontend_dist: str = os.getenv("PRAXIS_FRONTEND_DIST", "")
+
 
 settings = Settings()

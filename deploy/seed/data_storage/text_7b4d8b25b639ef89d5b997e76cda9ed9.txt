@@ -1,0 +1,13 @@
+DECISION RECORD
+
+Title: Build in-house authentication
+Statement: Build our own auth and session system rather than adopt a vendor.
+Status: superseded
+Reversibility: two_way
+Decided on: 2024-04-10
+Decision made by: Priya Sharma
+Participants: Lukas Meyer
+Topic: security
+Rationale: Auth is core; owning it should avoid per-MAU vendor costs.
+Assumptions this decision is based on:
+- (confidence: med) In-house auth will be cheaper than a vendor at our scale

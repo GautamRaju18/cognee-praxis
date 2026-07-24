@@ -1,0 +1,12 @@
+DECISION RECORD
+
+Title: Move enterprise support to Slack Connect
+Statement: Give enterprise accounts a shared Slack Connect channel for support.
+Status: reversed
+Reversibility: two_way
+Decided on: 2024-07-08
+Decision made by: Elena Petrova
+Topic: churn
+Rationale: High-touch, real-time support should lift retention.
+Assumptions this decision is based on:
+- (confidence: med) High-touch Slack support scales with headcount

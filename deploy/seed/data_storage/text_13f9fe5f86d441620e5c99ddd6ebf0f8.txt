@@ -1,0 +1,13 @@
+DECISION RECORD
+
+Title: Adopt a PagerDuty on-call rotation
+Statement: Move to a formal on-call rotation with PagerDuty and runbooks.
+Status: decided
+Reversibility: two_way
+Decided on: 2025-08-10
+Decision made by: Priya Sharma
+Participants: Mia Chen
+Topic: infra
+Rationale: Ad-hoc incident response is burning out senior engineers.
+Assumptions this decision is based on:
+- (confidence: high) A formal rotation lowers mean time to recovery

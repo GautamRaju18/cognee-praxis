@@ -1,0 +1,13 @@
+DECISION RECORD
+
+Title: Stand up a Snowflake and dbt data warehouse
+Statement: Centralize analytics in Snowflake with dbt models owned by the data team.
+Status: decided
+Reversibility: one_way
+Decided on: 2025-04-28
+Decision made by: Grace Okafor
+Participants: Raj Patel
+Topic: data
+Rationale: Metrics live in silos; decisions need one source of truth.
+Assumptions this decision is based on:
+- (confidence: med) A warehouse pays for itself in faster, trusted reporting

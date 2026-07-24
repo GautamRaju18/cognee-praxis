@@ -1,0 +1,8 @@
+OUTCOME RECORD
+
+For decision: Hire a founding account executive
+Outcome: The first AE closed $180k ARR in two quarters and validated a repeatable mid-market motion.
+Valence: positive
+Observed on: 2025-01-15
+Evidence source: RevOps review, Q1 2025
+Topic: hiring

@@ -1,0 +1,12 @@
+DECISION RECORD
+
+Title: Adopt Kubernetes for all services
+Statement: Standardize all backend services on Kubernetes within a year.
+Status: decided
+Reversibility: one_way
+Decided on: 2025-09-15
+Decision made by: Priya Sharma
+Topic: infra
+Rationale: Heterogeneous deployment tooling slows releases and complicates on-call.
+Assumptions this decision is based on:
+- (confidence: med) The team can absorb the k8s learning curve within a quarter

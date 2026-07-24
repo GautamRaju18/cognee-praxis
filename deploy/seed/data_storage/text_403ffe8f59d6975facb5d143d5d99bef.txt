@@ -1,0 +1,13 @@
+DECISION RECORD
+
+Title: Introduce usage-based pricing tier
+Statement: Add a metered tier billed per 1,000 API calls for developer accounts.
+Status: proposed
+Reversibility: two_way
+Decided on: 2025-11-02
+Decision made by: Marcus Lee
+Participants: Dana Kim
+Topic: pricing
+Rationale: Self-serve developers balk at seat pricing; usage pricing matches value.
+Assumptions this decision is based on:
+- (confidence: low) Developers can predict their monthly usage well enough

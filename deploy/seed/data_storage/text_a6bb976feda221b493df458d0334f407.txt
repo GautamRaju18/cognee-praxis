@@ -1,0 +1,8 @@
+OUTCOME RECORD
+
+For decision: Launch onboarding concierge for new accounts
+Outcome: 90-day activation rose 22% for concierge-onboarded cohorts and their 6-month churn halved.
+Valence: positive
+Observed on: 2025-07-30
+Evidence source: CS dashboard, July 2025 cohort review
+Topic: churn

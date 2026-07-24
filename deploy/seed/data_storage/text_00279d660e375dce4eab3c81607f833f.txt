@@ -1,0 +1,13 @@
+DECISION RECORD
+
+Title: Ship role-based access control (RBAC)
+Statement: Add org roles and granular permissions to the product.
+Status: decided
+Reversibility: two_way
+Decided on: 2025-07-02
+Decision made by: Nadia Rahman
+Participants: Lukas Meyer
+Topic: product
+Rationale: Enterprise buyers require RBAC to pass security review.
+Assumptions this decision is based on:
+- (confidence: high) RBAC is a top blocker in enterprise security reviews

@@ -1,0 +1,13 @@
+DECISION RECORD
+
+Title: Open a second engineering hub in Lisbon
+Statement: Establish a Lisbon engineering hub to widen the senior hiring pool.
+Status: proposed
+Reversibility: one_way
+Decided on: 2025-11-20
+Decision made by: Jonas Weber
+Participants: Leena Ahuja
+Topic: hiring
+Rationale: Senior hiring in our home market has stalled.
+Assumptions this decision is based on:
+- (confidence: low) A second hub accelerates senior hiring without hurting velocity

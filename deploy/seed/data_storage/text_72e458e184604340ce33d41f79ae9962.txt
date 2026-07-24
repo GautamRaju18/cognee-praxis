@@ -1,0 +1,13 @@
+DECISION RECORD
+
+Title: Hire a founding account executive
+Statement: Hire the first account executive to test a repeatable sales motion.
+Status: decided
+Reversibility: two_way
+Decided on: 2024-06-25
+Decision made by: Leena Ahuja
+Participants: Dana Kim
+Topic: hiring
+Rationale: Inbound large deals stall without anyone to run them.
+Assumptions this decision is based on:
+- (confidence: med) A single AE can prove a repeatable mid-market motion

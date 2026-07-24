@@ -1,5 +1,7 @@
 """/query and /check-proposal — the value endpoints."""
 
+import re
+
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,6 +9,30 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from praxis import demo_cache, models
 from praxis.config import settings
 from praxis.services import cognee_service
+
+_STOP = {
+    "what", "when", "where", "which", "have", "with", "that", "this", "your", "were",
+    "about", "before", "after", "would", "should", "could", "from", "into", "does",
+    "did", "was", "our", "the", "and", "for", "why", "how", "are", "you", "team",
+}
+
+
+def _keyword_decisions(
+    all_decisions: list[models.Decision], text: str, k: int = 3
+) -> list[models.Decision]:
+    """LLM-free relevance: score decisions by word overlap with the query. Powers
+    the cache-only cloud fallback so any question still returns grounded results."""
+    words = {w for w in re.findall(r"[a-z0-9]+", (text or "").lower()) if len(w) > 3 and w not in _STOP}
+    if not words:
+        return []
+    scored: list[tuple[int, models.Decision]] = []
+    for d in all_decisions:
+        hay = f"{d.title} {d.topic} {d.statement} {d.rationale or ''}".lower()
+        score = sum(1 for w in words if w in hay)
+        if score:
+            scored.append((score, d))
+    scored.sort(key=lambda x: (-x[0], x[1].title))
+    return [d for _, d in scored[:k]]
 
 
 async def _decisions_by_titles(
@@ -89,6 +115,28 @@ async def answer_query(session: AsyncSession, question: str) -> dict:
                 "reasoning": build_reasoning(cited),
             }
 
+    if settings.demo_cache_only:
+        # No LLM available (cloud deploy). Ground the answer in the closest
+        # decisions by keyword, and let the cited cards + graph path do the work.
+        result = await session.execute(select(models.Decision))
+        cited = _keyword_decisions(list(result.scalars().all()), question)
+        answer = (
+            "Here's what's on record in the company memory most related to your question — "
+            "each decision is shown below with the graph path linking it to its outcome."
+            if cited
+            else (
+                "I don't have a decision on record that matches that. Try one of the "
+                "suggested questions — churn, pricing, assumptions, the referral program, "
+                "or infrastructure — for a fully grounded answer."
+            )
+        )
+        return {
+            "answer": answer,
+            "cited_decisions": cited,
+            "context": "",
+            "reasoning": build_reasoning(cited),
+        }
+
     context = await cognee_service.graph_context(question)
     answer = await cognee_service.graph_completion(question, system_prompt=QUERY_SYSTEM_PROMPT)
     cited = await _decisions_cited_in(session, f"{context}\n{answer}")
@@ -136,6 +184,34 @@ async def check_proposal(
                 "relevant_history": history,
                 "warning": hit.warning,
             }
+
+    if settings.demo_cache_only:
+        # No LLM to judge — surface the related history (by topic, then keyword) so
+        # the visitor still sees the memory this would be weighed against.
+        relevant: dict = {}
+        if topic:
+            result = await session.execute(
+                select(models.Decision).where(models.Decision.topic == topic.strip().lower())
+            )
+            for d in result.scalars().all():
+                relevant[d.id] = d
+        if not relevant:
+            result = await session.execute(select(models.Decision))
+            for d in _keyword_decisions(list(result.scalars().all()), proposal_text, k=3):
+                relevant[d.id] = d
+        history = list(relevant.values())
+        return {
+            "repeats_prior": False,
+            "contradicts": [],
+            "relevant_history": history,
+            "warning": (
+                "Here's the related history from the company memory to weigh this against. "
+                "(Live conflict-detection runs the LLM — try the scripted referral or "
+                "cancellation-discount examples to see it in action.)"
+                if history
+                else "Nothing on record clearly repeats or contradicts this proposal."
+            ),
+        }
 
     probe = f"{proposal_text}\nTopic: {topic}" if topic else proposal_text
     context = await cognee_service.graph_context(probe)

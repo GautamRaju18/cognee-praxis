@@ -1,0 +1,13 @@
+DECISION RECORD
+
+Title: Open-source the core SDK
+Statement: Release the client SDK under Apache 2.0 on GitHub.
+Status: decided
+Reversibility: two_way
+Decided on: 2024-02-12
+Decision made by: Nadia Rahman
+Participants: Jonas Weber
+Topic: product
+Rationale: Open source builds developer trust and top-of-funnel adoption.
+Assumptions this decision is based on:
+- (confidence: med) Open source drives qualified developer signups

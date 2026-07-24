@@ -1,0 +1,8 @@
+OUTCOME RECORD
+
+For decision: Launch a free tier with 10k monthly API calls
+Outcome: Free-tier signups were strong but paid conversion sat near 1.5%, well below plan, and infra cost per free user was material.
+Valence: mixed
+Observed on: 2025-01-10
+Evidence source: Monetization review, Jan 2025
+Topic: pricing

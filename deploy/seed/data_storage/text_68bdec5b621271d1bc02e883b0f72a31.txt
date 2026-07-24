@@ -1,0 +1,13 @@
+DECISION RECORD
+
+Title: Switch to annual-only pricing
+Statement: All paid plans move to annual billing; monthly plans are discontinued.
+Status: decided
+Reversibility: two_way
+Decided on: 2025-03-10
+Decision made by: Dana Kim
+Participants: Marcus Lee
+Topic: pricing
+Rationale: Reduce churn and increase upfront cash flow for hiring runway.
+Assumptions this decision is based on:
+- (confidence: high) Enterprise customers prefer annual contracts

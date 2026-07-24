@@ -1,0 +1,8 @@
+OUTCOME RECORD
+
+For decision: Switch to annual-only pricing
+Outcome: Six months after the switch to annual-only pricing, upfront cash collections rose 18% and logo churn was unchanged.
+Valence: positive
+Observed on: 2025-09-20
+Evidence source: Finance QBR deck, Q3 2025
+Topic: pricing

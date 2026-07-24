@@ -1,0 +1,13 @@
+DECISION RECORD
+
+Title: Freeze headcount in Q4 to extend runway
+Statement: Pause all non-critical hiring through Q4 to protect runway.
+Status: decided
+Reversibility: two_way
+Decided on: 2024-11-25
+Decision made by: Leena Ahuja
+Participants: Jonas Weber
+Topic: finance
+Rationale: Burn outpaced plan; runway needed to clear 24 months.
+Assumptions this decision is based on:
+- (confidence: med) A freeze extends runway past 24 months without stalling roadmap

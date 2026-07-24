@@ -1,0 +1,13 @@
+DECISION RECORD
+
+Title: Ship a company design system
+Statement: Build a shared component library and design tokens for all product surfaces.
+Status: decided
+Reversibility: two_way
+Decided on: 2025-03-18
+Decision made by: Felix Chen
+Participants: Nadia Rahman
+Topic: product
+Rationale: Inconsistent UI slows shipping and erodes trust.
+Assumptions this decision is based on:
+- (confidence: med) A design system speeds feature delivery within a quarter

@@ -1,0 +1,8 @@
+OUTCOME RECORD
+
+For decision: Open-source the core SDK
+Outcome: The SDK reached 4k GitHub stars and became the top signup source within two quarters.
+Valence: positive
+Observed on: 2024-09-01
+Evidence source: GitHub analytics + attribution, Sep 2024
+Topic: product

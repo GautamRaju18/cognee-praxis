@@ -1,0 +1,8 @@
+OUTCOME RECORD
+
+For decision: Adopt a product-led growth motion
+Outcome: Self-serve accounts grew to 70% of new revenue by the end of 2024 with no dedicated sales team.
+Valence: positive
+Observed on: 2024-12-15
+Evidence source: Board deck, Q4 2024
+Topic: growth

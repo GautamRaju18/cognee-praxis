@@ -1,0 +1,8 @@
+OUTCOME RECORD
+
+For decision: Achieve SOC 2 Type II compliance
+Outcome: SOC 2 closed in March 2025 and directly unblocked three enterprise deals worth $420k ARR.
+Valence: positive
+Observed on: 2025-03-25
+Evidence source: Sales pipeline review, Q1 2025
+Topic: security

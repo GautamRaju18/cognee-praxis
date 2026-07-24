@@ -1,0 +1,13 @@
+DECISION RECORD
+
+Title: Sunset the legacy v1 API
+Statement: Deprecate the v1 API and require migration to v2 within six months.
+Status: decided
+Reversibility: one_way
+Decided on: 2024-10-05
+Decision made by: Nadia Rahman
+Participants: Raj Patel
+Topic: product
+Rationale: Maintaining two API versions doubles support and slows shipping.
+Assumptions this decision is based on:
+- (confidence: med) Customers migrate off v1 within six months

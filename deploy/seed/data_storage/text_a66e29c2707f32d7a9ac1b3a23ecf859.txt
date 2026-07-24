@@ -1,0 +1,8 @@
+OUTCOME RECORD
+
+For decision: Adopt managed auth and retire in-house auth
+Outcome: Auth maintenance dropped to near zero and the migration shipped with no customer-facing downtime.
+Valence: positive
+Observed on: 2025-01-30
+Evidence source: Infra review, Jan 2025
+Topic: security

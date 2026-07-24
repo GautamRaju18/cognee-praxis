@@ -1,0 +1,3 @@
+# The baked graph DB (ladybug/lancedb) + seed docs must be byte-identical across
+# OSes — never apply EOL/CRLF conversion, or the container can't read the graph.
+deploy/seed/** -text

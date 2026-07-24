@@ -1,0 +1,8 @@
+OUTCOME RECORD
+
+For decision: Sunset the legacy v1 API
+Outcome: Migration ran nine months, not six; a long tail of accounts needed hands-on help before v1 could be retired.
+Valence: mixed
+Observed on: 2025-07-01
+Evidence source: API deprecation postmortem, July 2025
+Topic: product

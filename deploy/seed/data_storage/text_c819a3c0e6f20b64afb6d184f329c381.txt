@@ -1,0 +1,13 @@
+DECISION RECORD
+
+Title: Achieve SOC 2 Type II compliance
+Statement: Complete a SOC 2 Type II audit within two quarters.
+Status: decided
+Reversibility: one_way
+Decided on: 2024-09-10
+Decision made by: Lukas Meyer
+Participants: Priya Sharma
+Topic: security
+Rationale: Enterprise buyers require it to close.
+Assumptions this decision is based on:
+- (confidence: high) SOC 2 will unblock stalled enterprise deals

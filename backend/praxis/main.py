@@ -1,9 +1,11 @@
 """Praxis API entrypoint."""
 
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 
 from praxis import __version__
@@ -60,5 +62,13 @@ async def health() -> HealthOut:
         db=db_status,
         cognee=cognee_status,
         cognee_version=cognee_version,
-        llm_provider=settings.llm_model or settings.llm_provider,
+        llm_provider=settings.llm_model or settings.llm_provider or "cache-only",
     )
+
+
+# Single-container deploy: serve the built React app at "/" so one service hosts
+# both the API and the UI. Mounted LAST so every API route above wins; guarded so
+# local dev (where Vite serves the frontend) is unaffected. html=True makes it an
+# SPA — unknown paths fall back to index.html.
+if settings.frontend_dist and os.path.isdir(settings.frontend_dist):
+    app.mount("/", StaticFiles(directory=settings.frontend_dist, html=True), name="spa")

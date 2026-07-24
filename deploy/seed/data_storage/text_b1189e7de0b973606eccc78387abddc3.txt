@@ -1,0 +1,8 @@
+OUTCOME RECORD
+
+For decision: Adopt a PagerDuty on-call rotation
+Outcome: MTTR dropped from 90 to 35 minutes and off-hours pages were shared evenly across the team.
+Valence: positive
+Observed on: 2025-11-28
+Evidence source: Infra reliability review, Nov 2025
+Topic: infra

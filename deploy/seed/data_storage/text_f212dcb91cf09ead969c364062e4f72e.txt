@@ -1,0 +1,13 @@
+DECISION RECORD
+
+Title: Adopt a sales-assist motion for 50+ seat deals
+Statement: Route accounts over 50 seats to a sales-assist flow with a solutions engineer.
+Status: decided
+Reversibility: two_way
+Decided on: 2025-06-15
+Decision made by: Dana Kim
+Participants: Leena Ahuja
+Topic: growth
+Rationale: Large deals stall in pure self-serve.
+Assumptions this decision is based on:
+- (confidence: med) A light sales touch raises large-deal win rates

@@ -1,0 +1,13 @@
+DECISION RECORD
+
+Title: Adopt a feature-flag and experiment platform
+Statement: Roll out a feature-flag service and gate all releases behind flags.
+Status: decided
+Reversibility: two_way
+Decided on: 2025-02-10
+Decision made by: Jonas Weber
+Participants: Mia Chen
+Topic: product
+Rationale: Ad-hoc release management blocks safe, frequent shipping.
+Assumptions this decision is based on:
+- (confidence: med) Flags let us ship to production daily without raising incidents

@@ -1,0 +1,18 @@
+# Render Blueprint — one-click deploy.
+# In Render: New → Blueprint → connect this repo → Apply.
+services:
+  - type: web
+    name: praxis
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: PRAXIS_DEMO_CACHE_ONLY
+        value: "true"
+      - key: PRAXIS_FRONTEND_DIST
+        value: /app/frontend_dist
+      - key: COGNEE_SKIP_CONNECTION_TEST
+        value: "true"
+      - key: ENABLE_BACKEND_ACCESS_CONTROL
+        value: "false"

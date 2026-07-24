@@ -1,0 +1,8 @@
+OUTCOME RECORD
+
+For decision: Freeze headcount in Q4 to extend runway
+Outcome: Runway extended to 28 months and the roadmap slipped only about two weeks.
+Valence: positive
+Observed on: 2025-02-28
+Evidence source: Finance review, Feb 2025
+Topic: finance

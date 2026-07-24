@@ -1,0 +1,8 @@
+OUTCOME RECORD
+
+For decision: Migrate primary database to managed Postgres
+Outcome: Migration completed with 40 minutes of downtime; on-call incidents fell 60% but p99 latency rose 3ms.
+Valence: mixed
+Observed on: 2025-06-18
+Evidence source: Infra postmortem, June 2025
+Topic: infra

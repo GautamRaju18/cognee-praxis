@@ -1,0 +1,13 @@
+DECISION RECORD
+
+Title: Adopt managed auth and retire in-house auth
+Statement: Move authentication to a managed provider and deprecate the in-house system.
+Status: decided
+Reversibility: one_way
+Decided on: 2024-11-12
+Decision made by: Priya Sharma
+Participants: Lukas Meyer
+Topic: security
+Rationale: In-house auth cost more than a vendor and carried security risk.
+Assumptions this decision is based on:
+- (confidence: high) A managed provider cuts auth maintenance to near zero

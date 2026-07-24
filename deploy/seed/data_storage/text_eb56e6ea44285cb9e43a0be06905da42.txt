@@ -1,0 +1,13 @@
+DECISION RECORD
+
+Title: Hire only senior engineers for the platform team
+Statement: Platform team roles are opened at senior level and above only.
+Status: decided
+Reversibility: two_way
+Decided on: 2025-05-20
+Decision made by: Jonas Weber
+Participants: Mia Chen
+Topic: hiring
+Rationale: The platform surface is too critical for long ramp-up times.
+Assumptions this decision is based on:
+- (confidence: med) Senior-only hiring keeps velocity without mentorship overhead

@@ -1,0 +1,13 @@
+DECISION RECORD
+
+Title: Launch onboarding concierge for new accounts
+Statement: Every new account above 20 seats gets a human-led onboarding session.
+Status: decided
+Reversibility: two_way
+Decided on: 2025-01-14
+Decision made by: Elena Petrova
+Participants: Sara Novak
+Topic: churn
+Rationale: Most churn happens in the first 60 days, before activation.
+Assumptions this decision is based on:
+- (confidence: high) Early activation is the main driver of retention

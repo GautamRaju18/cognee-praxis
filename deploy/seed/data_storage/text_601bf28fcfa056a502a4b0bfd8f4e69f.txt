@@ -1,0 +1,8 @@
+OUTCOME RECORD
+
+For decision: Test paid acquisition on Google and LinkedIn
+Outcome: Paid CAC came in 2.4x our content CAC with worse retention; the channel was cut after the test.
+Valence: negative
+Observed on: 2025-08-30
+Evidence source: Marketing QBR, Q3 2025
+Topic: marketing
